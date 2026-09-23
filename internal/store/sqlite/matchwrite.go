@@ -191,19 +191,31 @@ func (s *Store) DeleteLineup(ctx context.Context, id int64) error {
 	})
 }
 
-// AddSlot appends one hero cell at the lowest free board index.
+// AddSlot puts one hero cell at the lowest free board index.
 func (s *Store) AddSlot(ctx context.Context, lineupID, heroID int64, stars int) (int64, error) {
 	var id int64
 	err := s.WithTx(ctx, func(tx *sql.Tx) error {
-		var slotIdx int
-		if err := tx.QueryRowContext(ctx,
-			`SELECT COALESCE(MAX(slot_index) + 1, 0) FROM lineup_slots WHERE lineup_id = ?`, lineupID).
-			Scan(&slotIdx); err != nil {
+		rows, err := tx.QueryContext(ctx,
+			`SELECT slot_index FROM lineup_slots WHERE lineup_id = ?`, lineupID)
+		if err != nil {
+			return err
+		}
+		var existing []domain.Slot
+		for rows.Next() {
+			var sl domain.Slot
+			if err := rows.Scan(&sl.SlotIndex); err != nil {
+				rows.Close()
+				return err
+			}
+			existing = append(existing, sl)
+		}
+		if err := rows.Err(); err != nil {
+			rows.Close()
 			return err
 		}
 		res, err := tx.ExecContext(ctx,
 			`INSERT INTO lineup_slots (lineup_id, hero_id, slot_index, stars) VALUES (?, ?, ?, ?)`,
-			lineupID, heroID, slotIdx, stars)
+			lineupID, heroID, domain.NextSlotIndex(existing), stars)
 		if err != nil {
 			return err
 		}

@@ -118,6 +118,31 @@ func TestCopyLineup_CopiesBoardResetsScalars(t *testing.T) {
 	}
 }
 
+func TestAddSlot_FillsLowestFreeCell(t *testing.T) {
+	ctx := context.Background()
+	s := seedTemp(t)
+
+	// Punch a hole at board index 2 of draft board a (slot 102, hero 3), then add:
+	// the new cell must take index 2, not append after the tail.
+	if err := s.DeleteSlot(ctx, 102); err != nil {
+		t.Fatalf("punch hole: %v", err)
+	}
+	id, err := s.AddSlot(ctx, 34, 12, 2)
+	if err != nil {
+		t.Fatalf("add slot: %v", err)
+	}
+	var idx, stars int
+	var hero int64
+	if err := s.DB.QueryRowContext(ctx,
+		`SELECT slot_index, stars, hero_id FROM lineup_slots WHERE id = ?`, id).
+		Scan(&idx, &stars, &hero); err != nil {
+		t.Fatalf("read back: %v", err)
+	}
+	if idx != 2 || stars != 2 || hero != 12 {
+		t.Fatalf("new slot = (idx %d, %d stars, hero %d), want (2, 2, 12)", idx, stars, hero)
+	}
+}
+
 func TestFinalizeMatch_SetsFinalizedAt(t *testing.T) {
 	ctx := context.Background()
 	s := seedTemp(t)
