@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -118,4 +119,25 @@ func TestWithTx_HoldsWriteMu(t *testing.T) {
 		t.Fatal("WriteMu still held after WithTx returned")
 	}
 	store.WriteMu.Unlock()
+}
+
+func TestOpen_DirectoryPathFailsMigration(t *testing.T) {
+	_, err := Open(t.TempDir())
+	if err == nil || !strings.Contains(err.Error(), "migrate") {
+		t.Fatalf("Open(directory) err = %v, want migrate failure", err)
+	}
+}
+
+func TestWithTx_AfterCloseFails(t *testing.T) {
+	store := openTemp(t)
+	if err := store.Close(); err != nil {
+		t.Fatalf("close: %v", err)
+	}
+	err := store.WithTx(context.Background(), func(tx *sql.Tx) error {
+		t.Error("fn must not run on a closed pool")
+		return nil
+	})
+	if err == nil {
+		t.Fatal("WithTx on closed store must fail")
+	}
 }

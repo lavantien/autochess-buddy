@@ -3,6 +3,7 @@ package sqlite
 import (
 	"context"
 	"errors"
+	"strings"
 	"testing"
 
 	"github.com/lavantien/autochess-buddy/internal/domain"
@@ -308,4 +309,78 @@ func TestMapSlotTaken_UniqueMapsToFriendlyCopy(t *testing.T) {
 	if got := mapSlotTaken(other); got != other {
 		t.Fatalf("non-unique err must pass through, got %v", got)
 	}
+}
+
+func TestWriteBadRefsRefuseAndPairsRoundTrip(t *testing.T) {
+	ctx := context.Background()
+	s := seedTemp(t)
+	if _, err := s.CreateMatchShell(ctx, domain.Match{PatchID: 999, PlayedAt: 1, Source: "pro"}); err == nil {
+		t.Fatal("shell with missing patch: want error")
+	}
+	_, err := s.AddLineup(ctx, domain.AddLineupCmd{MatchID: 99, Label: "x", Placement: 1})
+	wantSentinel(t, err, domain.ErrNotFound)
+	slot, err := s.AddSlot(ctx, 34, 5, 2)
+	mustOK(t, err, "add slot")
+	cases := []struct {
+		name string
+		call func() error
+	}{
+		{"stale hero in add lineup", func() error { _, err := s.AddLineup(ctx, domain.AddLineupCmd{MatchID: 6, Placement: 4, Slots: []domain.Slot{{Hero: domain.Hero{ID: 999}, Stars: 2}}}); return err }},
+		{"stale item in add lineup", func() error { _, err := s.AddLineup(ctx, domain.AddLineupCmd{MatchID: 6, Placement: 4, Slots: []domain.Slot{{Hero: domain.Hero{ID: 1}, Stars: 2, Items: []domain.Item{{ID: 999}}}}}); return err }},
+		{"stale hero in add slot", func() error { _, err := s.AddSlot(ctx, 34, 999, 2); return err }},
+		{"stale item in add slot item", func() error { return s.AddSlotItem(ctx, slot, 999) }},
+		{"stale relic in add lineup relic", func() error { return s.AddLineupRelic(ctx, 34, 999) }},
+	}
+	for _, tc := range cases {
+		if err := tc.call(); err == nil {
+			t.Fatalf("%s: want dangling-reference error", tc.name)
+		}
+	}
+	var n int
+	if err := s.DB.QueryRowContext(ctx, `SELECT count(*) FROM lineups WHERE match_id = 6`).Scan(&n); err != nil || n != 3 {
+		t.Fatalf("match 6 lineups = %d, err %v, want 3 after rollback", n, err)
+	}
+	mustOK(t, s.AddSlotItem(ctx, slot, 3), "add slot item")
+	mustOK(t, s.RemoveSlotItem(ctx, slot, 3), "remove slot item")
+	wantSentinel(t, s.RemoveSlotItem(ctx, slot, 3), domain.ErrNotFound)
+	mustOK(t, s.AddLineupRelic(ctx, 36, 1), "add lineup relic")
+	mustOK(t, s.RemoveLineupRelic(ctx, 36, 1), "remove lineup relic")
+	wantSentinel(t, s.RemoveLineupRelic(ctx, 36, 1), domain.ErrNotFound)
+}
+
+func TestCopyLineup_PlacementExhausted(t *testing.T) {
+	ctx := context.Background()
+	s := seedTemp(t)
+	_, err := s.CopyLineup(ctx, 9999)
+	wantSentinel(t, err, domain.ErrNotFound)
+	for p := 4; p <= 8; p++ {
+		_, err := s.AddLineup(ctx, domain.AddLineupCmd{MatchID: 6, Label: "fill", Placement: p})
+		mustOK(t, err, "fill")
+	}
+	_, err = s.CopyLineup(ctx, 34)
+	if err == nil || !strings.Contains(err.Error(), "all 8 placements") {
+		t.Fatalf("copy with full board err = %v, want placement exhaustion", err)
+	}
+}
+
+func TestUpdateLineup_PersistsScalarsAndMapsStaleId(t *testing.T) {
+	ctx := context.Background()
+	s := seedTemp(t)
+	_, lineups, err := s.GetMatch(ctx, 6)
+	if err != nil || len(lineups) == 0 || len(lineups[0].Slots) == 0 || lineups[0].ID != 34 {
+		t.Fatalf("lineups = %+v, err %v, want lineup 34 with slots first", lineups, err)
+	}
+	board := lineups[0]
+	board.Label, board.Wins, board.Networth = "renamed", 9, 12345
+	mustOK(t, s.UpdateLineup(ctx, board), "update lineup")
+	mustOK(t, s.SetSlotStars(ctx, board.Slots[0].ID, 3), "set slot stars")
+	_, lineups, err = s.GetMatch(ctx, 6)
+	if err != nil {
+		t.Fatalf("reget after update: %v", err)
+	}
+	got := lineups[0]
+	if got.Label != "renamed" || got.Wins != 9 || got.Networth != 12345 || got.Slots[0].Stars != 3 {
+		t.Fatalf("after update = %+v slots[0] = %+v", got, got.Slots[0])
+	}
+	wantSentinel(t, s.UpdateLineup(ctx, domain.Lineup{ID: 9999, Placement: 1}), domain.ErrNotFound)
 }
