@@ -27,13 +27,20 @@ jobs:
       - run: make badge
       - name: publish coverage badge
         # always(): publish the truthful coverage color even when the gate
-        # fails; default-token pushes trigger no further workflow runs.
-        if: always() && hashFiles('coverage.json') != ''
+        # or the suite fails. A missing json means the suite died before a
+        # profile existed, published as a red error badge instead of going
+        # stale. Main and release tags only, so a branch dispatch cannot
+        # clobber the badge. Default-token pushes trigger no further runs.
+        if: always() && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/'))
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           dir="$(mktemp -d)"
-          cp coverage.json "$dir"
+          if [ -f coverage.json ]; then
+            cp coverage.json "$dir"
+          else
+            printf '%s' '{"schemaVersion":1,"label":"coverage","message":"error","color":"red","isError":true}' > "$dir/coverage.json"
+          fi
           cd "$dir"
           git init -q -b badges
           git config user.name "github-actions[bot]"
