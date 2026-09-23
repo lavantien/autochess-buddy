@@ -130,6 +130,7 @@ Defense:
 
 ## data layer decisions
 
+- read-model rows and filters (hero and synergy and item and relic and placement rows, the match list row, hero stats) live in domain next to the entity types they embed, so the ui templates render against them without importing the store or analytics packages. That honors "each layer only talks to the layer directly below" (readme:100), which a type-only import from a template would silently break.
 - journal mode TRUNCATE: the rollback journal sits at a stable path and is zero bytes when idle, which the pre-commit hook checks so a torn db can never be committed.
 - goose migrations embedded in the binary: no migration tool needs installing, a fresh db is one `Open` away.
 - data/app.db committed migrated-empty and seeding is opt-in (`make seed`): fake fixture data must never mix with a person's real entry history.

@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/lavantien/autochess-buddy/internal/analytics"
+	"github.com/lavantien/autochess-buddy/internal/domain"
 	"github.com/lavantien/autochess-buddy/internal/service"
 	"github.com/lavantien/autochess-buddy/internal/store/sqlite"
 )
@@ -41,40 +41,40 @@ func newDashTestServer(t *testing.T) (http.Handler, *sqlite.Store, service.Entry
 // fakeAnalytics stands in for the duckdb engine in handler tests; its fields
 // feed the dashboard panel assertions.
 type fakeAnalytics struct {
-	heroRows    []analytics.HeroRow
-	placeRows   []analytics.PlaceRow
+	heroRows    []domain.HeroRow
+	placeRows   []domain.PlaceRow
 	viewCount   int
-	lastFilter  analytics.Filter
+	lastFilter  domain.Filter
 	filterCalls int
 }
 
-func (f *fakeAnalytics) HeroPerformance(ctx context.Context, fl analytics.Filter) ([]analytics.HeroRow, error) {
+func (f *fakeAnalytics) HeroPerformance(ctx context.Context, fl domain.Filter) ([]domain.HeroRow, error) {
 	f.lastFilter = fl
 	f.filterCalls++
 	return f.heroRows, nil
 }
 
-func (f *fakeAnalytics) SynergyPerformance(ctx context.Context, fl analytics.Filter) ([]analytics.SynergyRow, error) {
+func (f *fakeAnalytics) SynergyPerformance(ctx context.Context, fl domain.Filter) ([]domain.SynergyRow, error) {
 	f.lastFilter = fl
 	return nil, nil
 }
 
-func (f *fakeAnalytics) ItemPerformance(ctx context.Context, fl analytics.Filter) ([]analytics.ItemRow, error) {
+func (f *fakeAnalytics) ItemPerformance(ctx context.Context, fl domain.Filter) ([]domain.ItemRow, error) {
 	f.lastFilter = fl
 	return nil, nil
 }
 
-func (f *fakeAnalytics) RelicPerformance(ctx context.Context, fl analytics.Filter) ([]analytics.RelicRow, error) {
+func (f *fakeAnalytics) RelicPerformance(ctx context.Context, fl domain.Filter) ([]domain.RelicRow, error) {
 	f.lastFilter = fl
 	return nil, nil
 }
 
-func (f *fakeAnalytics) NetworthByPlacement(ctx context.Context, fl analytics.Filter) ([]analytics.PlaceRow, error) {
+func (f *fakeAnalytics) NetworthByPlacement(ctx context.Context, fl domain.Filter) ([]domain.PlaceRow, error) {
 	f.lastFilter = fl
 	return f.placeRows, nil
 }
 
-func (f *fakeAnalytics) LineupsInView(ctx context.Context, fl analytics.Filter) (int, error) {
+func (f *fakeAnalytics) LineupsInView(ctx context.Context, fl domain.Filter) (int, error) {
 	f.lastFilter = fl
 	return f.viewCount, nil
 }

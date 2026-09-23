@@ -10,11 +10,10 @@ import templruntime "github.com/a-h/templ/runtime"
 
 import (
 	"github.com/lavantien/autochess-buddy/internal/domain"
-	"github.com/lavantien/autochess-buddy/internal/store/sqlite"
 )
 
 // MatchesListPage renders the matches table with its plain GET filters.
-func MatchesListPage(rows []sqlite.MatchListRow, f sqlite.MatchFilter, patches []domain.Patch) templ.Component {
+func MatchesListPage(rows []domain.MatchListRow, f domain.MatchFilter, patches []domain.Patch) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -43,7 +42,7 @@ func MatchesListPage(rows []sqlite.MatchListRow, f sqlite.MatchFilter, patches [
 	})
 }
 
-func matchesBody(rows []sqlite.MatchListRow, f sqlite.MatchFilter, patches []domain.Patch) templ.Component {
+func matchesBody(rows []domain.MatchListRow, f domain.MatchFilter, patches []domain.Patch) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -76,7 +75,7 @@ func matchesBody(rows []sqlite.MatchListRow, f sqlite.MatchFilter, patches []dom
 			var templ_7745c5c3_Var3 string
 			templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.ResolveAttributeValue(p.Version)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/matches.templ`, Line: 25, Col: 31}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/matches.templ`, Line: 24, Col: 31}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var3)
 			if templ_7745c5c3_Err != nil {
@@ -99,7 +98,7 @@ func matchesBody(rows []sqlite.MatchListRow, f sqlite.MatchFilter, patches []dom
 			var templ_7745c5c3_Var4 string
 			templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(p.Version)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/matches.templ`, Line: 25, Col: 77}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/matches.templ`, Line: 24, Col: 77}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
 			if templ_7745c5c3_Err != nil {
@@ -172,7 +171,7 @@ func matchesBody(rows []sqlite.MatchListRow, f sqlite.MatchFilter, patches []dom
 				var templ_7745c5c3_Var5 string
 				templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(matchState(r.Match))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/matches.templ`, Line: 55, Col: 32}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/matches.templ`, Line: 54, Col: 32}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
 				if templ_7745c5c3_Err != nil {
@@ -185,7 +184,7 @@ func matchesBody(rows []sqlite.MatchListRow, f sqlite.MatchFilter, patches []dom
 				var templ_7745c5c3_Var6 templ.SafeURL
 				templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinURLErrs(matchHref(r.Match))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/matches.templ`, Line: 56, Col: 39}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/matches.templ`, Line: 55, Col: 39}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
 				if templ_7745c5c3_Err != nil {
@@ -198,7 +197,7 @@ func matchesBody(rows []sqlite.MatchListRow, f sqlite.MatchFilter, patches []dom
 				var templ_7745c5c3_Var7 string
 				templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs(playedText(r.Match.PlayedAt))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/matches.templ`, Line: 56, Col: 72}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/matches.templ`, Line: 55, Col: 72}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
 				if templ_7745c5c3_Err != nil {
@@ -211,7 +210,7 @@ func matchesBody(rows []sqlite.MatchListRow, f sqlite.MatchFilter, patches []dom
 				var templ_7745c5c3_Var8 string
 				templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs(r.PatchVersion)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/matches.templ`, Line: 57, Col: 27}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/matches.templ`, Line: 56, Col: 27}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
 				if templ_7745c5c3_Err != nil {
@@ -224,7 +223,7 @@ func matchesBody(rows []sqlite.MatchListRow, f sqlite.MatchFilter, patches []dom
 				var templ_7745c5c3_Var9 string
 				templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(r.Match.Source)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/matches.templ`, Line: 58, Col: 27}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/matches.templ`, Line: 57, Col: 27}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
 				if templ_7745c5c3_Err != nil {
@@ -237,7 +236,7 @@ func matchesBody(rows []sqlite.MatchListRow, f sqlite.MatchFilter, patches []dom
 				var templ_7745c5c3_Var10 templ.SafeURL
 				templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinURLErrs(matchHref(r.Match))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/matches.templ`, Line: 60, Col: 36}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/matches.templ`, Line: 59, Col: 36}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var10))
 				if templ_7745c5c3_Err != nil {
@@ -258,7 +257,7 @@ func matchesBody(rows []sqlite.MatchListRow, f sqlite.MatchFilter, patches []dom
 				var templ_7745c5c3_Var11 string
 				templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.JoinStringErrs(r.Match.Notes)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/matches.templ`, Line: 64, Col: 26}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/matches.templ`, Line: 63, Col: 26}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var11))
 				if templ_7745c5c3_Err != nil {
@@ -359,7 +358,7 @@ func newMatchBody(patches []domain.Patch, st CodexFormState) templ.Component {
 			var templ_7745c5c3_Var14 string
 			templ_7745c5c3_Var14, templ_7745c5c3_Err = templ.ResolveAttributeValue(itoa(p.ID))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/matches.templ`, Line: 100, Col: 32}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/matches.templ`, Line: 99, Col: 32}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var14)
 			if templ_7745c5c3_Err != nil {
@@ -382,7 +381,7 @@ func newMatchBody(patches []domain.Patch, st CodexFormState) templ.Component {
 			var templ_7745c5c3_Var15 string
 			templ_7745c5c3_Var15, templ_7745c5c3_Err = templ.JoinStringErrs(p.Version)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/matches.templ`, Line: 100, Col: 97}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/matches.templ`, Line: 99, Col: 97}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var15))
 			if templ_7745c5c3_Err != nil {
@@ -420,7 +419,7 @@ func newMatchBody(patches []domain.Patch, st CodexFormState) templ.Component {
 		var templ_7745c5c3_Var16 string
 		templ_7745c5c3_Var16, templ_7745c5c3_Err = templ.ResolveAttributeValue(st.val("played_at", ""))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/matches.templ`, Line: 113, Col: 81}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/matches.templ`, Line: 112, Col: 81}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var16)
 		if templ_7745c5c3_Err != nil {
@@ -448,7 +447,7 @@ func newMatchBody(patches []domain.Patch, st CodexFormState) templ.Component {
 			var templ_7745c5c3_Var17 string
 			templ_7745c5c3_Var17, templ_7745c5c3_Err = templ.JoinStringErrs(msg)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/matches.templ`, Line: 115, Col: 30}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/matches.templ`, Line: 114, Col: 30}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var17))
 			if templ_7745c5c3_Err != nil {
@@ -466,7 +465,7 @@ func newMatchBody(patches []domain.Patch, st CodexFormState) templ.Component {
 		var templ_7745c5c3_Var18 string
 		templ_7745c5c3_Var18, templ_7745c5c3_Err = templ.ResolveAttributeValue(st.val("notes", ""))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/matches.templ`, Line: 120, Col: 63}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/matches.templ`, Line: 119, Col: 63}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var18)
 		if templ_7745c5c3_Err != nil {
@@ -538,7 +537,7 @@ func detailBody(m domain.Match, patchVersion string, lineups []domain.Lineup) te
 		var templ_7745c5c3_Var21 string
 		templ_7745c5c3_Var21, templ_7745c5c3_Err = templ.JoinStringErrs(itoa(m.ID))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/matches.templ`, Line: 134, Col: 24}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/matches.templ`, Line: 133, Col: 24}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var21))
 		if templ_7745c5c3_Err != nil {
@@ -551,7 +550,7 @@ func detailBody(m domain.Match, patchVersion string, lineups []domain.Lineup) te
 		var templ_7745c5c3_Var22 string
 		templ_7745c5c3_Var22, templ_7745c5c3_Err = templ.JoinStringErrs(patchVersion)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/matches.templ`, Line: 135, Col: 38}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/matches.templ`, Line: 134, Col: 38}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var22))
 		if templ_7745c5c3_Err != nil {
@@ -564,7 +563,7 @@ func detailBody(m domain.Match, patchVersion string, lineups []domain.Lineup) te
 		var templ_7745c5c3_Var23 string
 		templ_7745c5c3_Var23, templ_7745c5c3_Err = templ.JoinStringErrs(m.Source)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/matches.templ`, Line: 135, Col: 51}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/matches.templ`, Line: 134, Col: 51}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var23))
 		if templ_7745c5c3_Err != nil {
@@ -577,7 +576,7 @@ func detailBody(m domain.Match, patchVersion string, lineups []domain.Lineup) te
 		var templ_7745c5c3_Var24 string
 		templ_7745c5c3_Var24, templ_7745c5c3_Err = templ.JoinStringErrs(playedText(m.FinalizedAt))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/matches.templ`, Line: 135, Col: 91}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/matches.templ`, Line: 134, Col: 91}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var24))
 		if templ_7745c5c3_Err != nil {
@@ -603,7 +602,7 @@ func detailBody(m domain.Match, patchVersion string, lineups []domain.Lineup) te
 			var templ_7745c5c3_Var25 string
 			templ_7745c5c3_Var25, templ_7745c5c3_Err = templ.JoinStringErrs(lineupName(l))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/matches.templ`, Line: 140, Col: 38}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/matches.templ`, Line: 139, Col: 38}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var25))
 			if templ_7745c5c3_Err != nil {
@@ -616,7 +615,7 @@ func detailBody(m domain.Match, patchVersion string, lineups []domain.Lineup) te
 			var templ_7745c5c3_Var26 string
 			templ_7745c5c3_Var26, templ_7745c5c3_Err = templ.JoinStringErrs(l.Wins)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/matches.templ`, Line: 141, Col: 34}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/matches.templ`, Line: 140, Col: 34}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var26))
 			if templ_7745c5c3_Err != nil {
@@ -629,7 +628,7 @@ func detailBody(m domain.Match, patchVersion string, lineups []domain.Lineup) te
 			var templ_7745c5c3_Var27 string
 			templ_7745c5c3_Var27, templ_7745c5c3_Err = templ.JoinStringErrs(l.Draws)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/matches.templ`, Line: 141, Col: 46}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/matches.templ`, Line: 140, Col: 46}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var27))
 			if templ_7745c5c3_Err != nil {
@@ -642,7 +641,7 @@ func detailBody(m domain.Match, patchVersion string, lineups []domain.Lineup) te
 			var templ_7745c5c3_Var28 string
 			templ_7745c5c3_Var28, templ_7745c5c3_Err = templ.JoinStringErrs(l.Losses)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/matches.templ`, Line: 141, Col: 59}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/matches.templ`, Line: 140, Col: 59}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var28))
 			if templ_7745c5c3_Err != nil {
@@ -655,7 +654,7 @@ func detailBody(m domain.Match, patchVersion string, lineups []domain.Lineup) te
 			var templ_7745c5c3_Var29 string
 			templ_7745c5c3_Var29, templ_7745c5c3_Err = templ.JoinStringErrs(l.Networth)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/matches.templ`, Line: 142, Col: 38}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/matches.templ`, Line: 141, Col: 38}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var29))
 			if templ_7745c5c3_Err != nil {
@@ -683,7 +682,7 @@ func detailBody(m domain.Match, patchVersion string, lineups []domain.Lineup) te
 		var templ_7745c5c3_Var30 string
 		templ_7745c5c3_Var30, templ_7745c5c3_Err = templ.JoinStringErrs(m.Notes)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/matches.templ`, Line: 151, Col: 28}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/matches.templ`, Line: 150, Col: 28}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var30))
 		if templ_7745c5c3_Err != nil {
@@ -741,7 +740,7 @@ func ReadOnlyCard(l domain.Lineup) templ.Component {
 		var templ_7745c5c3_Var32 string
 		templ_7745c5c3_Var32, templ_7745c5c3_Err = templ.JoinStringErrs(lineupName(l))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/matches.templ`, Line: 167, Col: 36}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/matches.templ`, Line: 166, Col: 36}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var32))
 		if templ_7745c5c3_Err != nil {
@@ -754,7 +753,7 @@ func ReadOnlyCard(l domain.Lineup) templ.Component {
 		var templ_7745c5c3_Var33 string
 		templ_7745c5c3_Var33, templ_7745c5c3_Err = templ.JoinStringErrs(l.Wins)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/matches.templ`, Line: 169, Col: 34}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/matches.templ`, Line: 168, Col: 34}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var33))
 		if templ_7745c5c3_Err != nil {
@@ -767,7 +766,7 @@ func ReadOnlyCard(l domain.Lineup) templ.Component {
 		var templ_7745c5c3_Var34 string
 		templ_7745c5c3_Var34, templ_7745c5c3_Err = templ.JoinStringErrs(l.Draws)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/matches.templ`, Line: 169, Col: 46}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/matches.templ`, Line: 168, Col: 46}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var34))
 		if templ_7745c5c3_Err != nil {
@@ -780,7 +779,7 @@ func ReadOnlyCard(l domain.Lineup) templ.Component {
 		var templ_7745c5c3_Var35 string
 		templ_7745c5c3_Var35, templ_7745c5c3_Err = templ.JoinStringErrs(l.Losses)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/matches.templ`, Line: 169, Col: 59}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/matches.templ`, Line: 168, Col: 59}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var35))
 		if templ_7745c5c3_Err != nil {
@@ -793,7 +792,7 @@ func ReadOnlyCard(l domain.Lineup) templ.Component {
 		var templ_7745c5c3_Var36 string
 		templ_7745c5c3_Var36, templ_7745c5c3_Err = templ.JoinStringErrs(l.Networth)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/matches.templ`, Line: 169, Col: 83}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/matches.templ`, Line: 168, Col: 83}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var36))
 		if templ_7745c5c3_Err != nil {
@@ -830,7 +829,7 @@ func ReadOnlyCard(l domain.Lineup) templ.Component {
 				var templ_7745c5c3_Var37 string
 				templ_7745c5c3_Var37, templ_7745c5c3_Err = templ.JoinStringErrs(sl.Hero.Name)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/matches.templ`, Line: 184, Col: 45}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/matches.templ`, Line: 183, Col: 45}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var37))
 				if templ_7745c5c3_Err != nil {

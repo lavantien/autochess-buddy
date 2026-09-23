@@ -6,6 +6,8 @@ import (
 	"embed"
 	"fmt"
 	"strings"
+
+	"github.com/lavantien/autochess-buddy/internal/domain"
 )
 
 //go:embed queries/*.sql
@@ -27,13 +29,13 @@ func querySQL(name string) string {
 // used on purpose: this duckdb prebuilt linked against the current Windows
 // toolchain crashes the process on any bind, named or positional, while
 // parameterless statements run clean, so the filters inline as literals.
-func catalogueQuery(name string, f Filter) string {
+func catalogueQuery(name string, f domain.Filter) string {
 	return strings.Replace(querySQL(name), "{{filters}}", filterSQL(f), 1)
 }
 
 // filterSQL emits the guard clauses narrowing the view to finalized matches
 // and the optional patch and source. Zero filter values emit nothing.
-func filterSQL(f Filter) string {
+func filterSQL(f domain.Filter) string {
 	clauses := ""
 	if f.PatchID != 0 {
 		clauses += fmt.Sprintf(" AND m.patch_id = %d", f.PatchID)
@@ -112,7 +114,7 @@ type fieldRaw struct {
 
 // gather runs one catalogue query inside a single batch and scans every row
 // in column order. An empty result returns no rows and no error.
-func gather[T any](ctx context.Context, e *engine, name string, f Filter, scan func(*sql.Rows, *T) error) ([]T, error) {
+func gather[T any](ctx context.Context, e *engine, name string, f domain.Filter, scan func(*sql.Rows, *T) error) ([]T, error) {
 	var out []T
 	err := e.batch(ctx, catalogueQuery(name, f), nil, func(r *sql.Rows) error {
 		for r.Next() {
@@ -162,29 +164,29 @@ func scanPlace(r *sql.Rows, p *placeRaw) error {
 	return r.Scan(&p.Placement, &p.N, &p.AvgNetworth)
 }
 
-func (e *engine) queryHeroes(ctx context.Context, f Filter) ([]heroRaw, error) {
+func (e *engine) queryHeroes(ctx context.Context, f domain.Filter) ([]heroRaw, error) {
 	return gather(ctx, e, "heroes", f, scanHero)
 }
 
-func (e *engine) querySynergies(ctx context.Context, f Filter) ([]synergyRaw, error) {
+func (e *engine) querySynergies(ctx context.Context, f domain.Filter) ([]synergyRaw, error) {
 	return gather(ctx, e, "synergies", f, scanSynergy)
 }
 
-func (e *engine) queryItems(ctx context.Context, f Filter) ([]itemRaw, error) {
+func (e *engine) queryItems(ctx context.Context, f domain.Filter) ([]itemRaw, error) {
 	return gather(ctx, e, "items", f, scanItem)
 }
 
-func (e *engine) queryRelics(ctx context.Context, f Filter) ([]relicRaw, error) {
+func (e *engine) queryRelics(ctx context.Context, f domain.Filter) ([]relicRaw, error) {
 	return gather(ctx, e, "relics", f, scanRelic)
 }
 
-func (e *engine) queryNetworth(ctx context.Context, f Filter) ([]placeRaw, error) {
+func (e *engine) queryNetworth(ctx context.Context, f domain.Filter) ([]placeRaw, error) {
 	return gather(ctx, e, "networth", f, scanPlace)
 }
 
 // queryField and countView read the single aggregate row their queries always
 // produce.
-func (e *engine) queryField(ctx context.Context, f Filter) (fieldRaw, error) {
+func (e *engine) queryField(ctx context.Context, f domain.Filter) (fieldRaw, error) {
 	var out fieldRaw
 	err := e.batch(ctx, catalogueQuery("field", f), nil, func(r *sql.Rows) error {
 		if !r.Next() {
@@ -195,7 +197,7 @@ func (e *engine) queryField(ctx context.Context, f Filter) (fieldRaw, error) {
 	return out, err
 }
 
-func (e *engine) countView(ctx context.Context, f Filter) (int, error) {
+func (e *engine) countView(ctx context.Context, f domain.Filter) (int, error) {
 	var n int
 	err := e.batch(ctx, catalogueQuery("count", f), nil, func(r *sql.Rows) error {
 		if !r.Next() {

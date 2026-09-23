@@ -4,6 +4,8 @@ import (
 	"context"
 	"math"
 	"testing"
+
+	"github.com/lavantien/autochess-buddy/internal/domain"
 )
 
 // Golden numbers derive from the fixture structure, never from engine output:
@@ -16,7 +18,7 @@ import (
 // string literal, never as SQL.
 func TestQuoteLiteral_NeutralizesQuoteAttack(t *testing.T) {
 	_, e := openAnalytics(t)
-	rows, err := e.HeroPerformance(context.Background(), Filter{Source: "pro' OR '1'='1"})
+	rows, err := e.HeroPerformance(context.Background(), domain.Filter{Source: "pro' OR '1'='1"})
 	if err != nil {
 		t.Fatalf("hostile source must not error: %v", err)
 	}
@@ -30,14 +32,14 @@ func TestHeroQuery_FilterScoping(t *testing.T) {
 	ctx := context.Background()
 	cases := []struct {
 		name  string
-		f     Filter
+		f     domain.Filter
 		picks int
 	}{
-		{"default view keeps pro plus me", Filter{}, 9},
-		{"pro only", Filter{Source: "pro"}, 8},
-		{"patch 1", Filter{PatchID: 1}, 4},
-		{"patch 2 keeps the me match", Filter{PatchID: 2}, 5},
-		{"me only", Filter{Source: "me"}, 1},
+		{"default view keeps pro plus me", domain.Filter{}, 9},
+		{"pro only", domain.Filter{Source: "pro"}, 8},
+		{"patch 1", domain.Filter{PatchID: 1}, 4},
+		{"patch 2 keeps the me match", domain.Filter{PatchID: 2}, 5},
+		{"me only", domain.Filter{Source: "me"}, 1},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -60,7 +62,7 @@ func TestHeroQuery_FilterScoping(t *testing.T) {
 		})
 	}
 	t.Run("unknown source matches nothing", func(t *testing.T) {
-		rows, err := e.queryHeroes(ctx, Filter{Source: "bogus"})
+		rows, err := e.queryHeroes(ctx, domain.Filter{Source: "bogus"})
 		if err != nil {
 			t.Fatalf("queryHeroes: %v", err)
 		}
@@ -69,7 +71,7 @@ func TestHeroQuery_FilterScoping(t *testing.T) {
 		}
 	})
 	t.Run("pro view scoping numbers", func(t *testing.T) {
-		rows, err := e.queryHeroes(ctx, Filter{Source: "pro"})
+		rows, err := e.queryHeroes(ctx, domain.Filter{Source: "pro"})
 		if err != nil {
 			t.Fatalf("queryHeroes: %v", err)
 		}
@@ -97,7 +99,7 @@ func TestHeroQuery_FilterScoping(t *testing.T) {
 
 func TestSynergyQuery_TiersAndSlices(t *testing.T) {
 	_, e := openAnalytics(t)
-	rows, err := e.querySynergies(context.Background(), Filter{})
+	rows, err := e.querySynergies(context.Background(), domain.Filter{})
 	if err != nil {
 		t.Fatalf("querySynergies: %v", err)
 	}
@@ -154,7 +156,7 @@ func TestSynergyQuery_TiersAndSlices(t *testing.T) {
 
 func TestItemQuery_Lift(t *testing.T) {
 	_, e := openAnalytics(t)
-	rows, err := e.queryItems(context.Background(), Filter{Source: "pro"})
+	rows, err := e.queryItems(context.Background(), domain.Filter{Source: "pro"})
 	if err != nil {
 		t.Fatalf("queryItems: %v", err)
 	}
@@ -182,7 +184,7 @@ func TestItemQuery_Lift(t *testing.T) {
 
 func TestRelicQuery_Lift(t *testing.T) {
 	_, e := openAnalytics(t)
-	rows, err := e.queryRelics(context.Background(), Filter{Source: "pro"})
+	rows, err := e.queryRelics(context.Background(), domain.Filter{Source: "pro"})
 	if err != nil {
 		t.Fatalf("queryRelics: %v", err)
 	}
@@ -210,7 +212,7 @@ func TestRelicQuery_Lift(t *testing.T) {
 
 func TestNetworthQuery_Curve(t *testing.T) {
 	_, e := openAnalytics(t)
-	rows, err := e.queryNetworth(context.Background(), Filter{Source: "pro"})
+	rows, err := e.queryNetworth(context.Background(), domain.Filter{Source: "pro"})
 	if err != nil {
 		t.Fatalf("queryNetworth: %v", err)
 	}
@@ -234,16 +236,16 @@ func TestViewCountAndField(t *testing.T) {
 	ctx := context.Background()
 	cases := []struct {
 		name string
-		f    Filter
+		f    domain.Filter
 		n    int
 		avg  float64
 	}{
-		{"default view", Filter{}, 33, 145.0 / 33.0},
-		{"pro only", Filter{Source: "pro"}, 32, 4.5},
-		{"me only", Filter{Source: "me"}, 1, 1},
-		{"patch 1", Filter{PatchID: 1}, 16, 4.5},
-		{"patch 2", Filter{PatchID: 2}, 17, (16*4.5 + 1) / 17},
-		{"patch 2 pro", Filter{PatchID: 2, Source: "pro"}, 16, 4.5},
+		{"default view", domain.Filter{}, 33, 145.0 / 33.0},
+		{"pro only", domain.Filter{Source: "pro"}, 32, 4.5},
+		{"me only", domain.Filter{Source: "me"}, 1, 1},
+		{"patch 1", domain.Filter{PatchID: 1}, 16, 4.5},
+		{"patch 2", domain.Filter{PatchID: 2}, 17, (16*4.5 + 1) / 17},
+		{"patch 2 pro", domain.Filter{PatchID: 2, Source: "pro"}, 16, 4.5},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -267,7 +269,7 @@ func TestViewCountAndField(t *testing.T) {
 		})
 	}
 	t.Run("empty view", func(t *testing.T) {
-		f, err := e.queryField(ctx, Filter{PatchID: 999})
+		f, err := e.queryField(ctx, domain.Filter{PatchID: 999})
 		if err != nil {
 			t.Fatalf("queryField: %v", err)
 		}

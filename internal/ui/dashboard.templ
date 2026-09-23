@@ -1,16 +1,13 @@
 package ui
 
-import (
-	"github.com/lavantien/autochess-buddy/internal/analytics"
-	"github.com/lavantien/autochess-buddy/internal/domain"
-)
+import "github.com/lavantien/autochess-buddy/internal/domain"
 
 // DashboardPage renders the full overview for one view with its filter row.
-templ DashboardPage(view string, patches []domain.Patch, patchVersion string, f analytics.Filter, panel templ.Component, n int) {
+templ DashboardPage(view string, patches []domain.Patch, patchVersion string, f domain.Filter, panel templ.Component, n int) {
 	@BaseLayout("dashboard", "dashboard", dashBody(view, patches, patchVersion, f, panel, n))
 }
 
-templ dashBody(view string, patches []domain.Patch, patchVersion string, f analytics.Filter, panel templ.Component, n int) {
+templ dashBody(view string, patches []domain.Patch, patchVersion string, f domain.Filter, panel templ.Component, n int) {
 	<section class="dash">
 		<form class="filterrow" method="get" action={ "/dashboard/" + view }>
 			<label>
@@ -83,7 +80,7 @@ templ DashPanel(view string, table templ.Component) {
 
 // HeroTable renders hero performance rows with the networth curve pinned under
 // it, closing the readme metric list (frontend-design:124).
-templ HeroTable(rows []analytics.HeroRow, places []analytics.PlaceRow) {
+templ HeroTable(rows []domain.HeroRow, places []domain.PlaceRow) {
 	if len(rows) == 0 {
 		@EmptyState("no finalized matches for this filter yet. finalize a few matches first.", nil)
 	} else {
@@ -115,7 +112,7 @@ templ HeroTable(rows []analytics.HeroRow, places []analytics.PlaceRow) {
 }
 
 // NetworthTable is the compact placement curve at the dashboard bottom.
-templ NetworthTable(places []analytics.PlaceRow) {
+templ NetworthTable(places []domain.PlaceRow) {
 	if len(places) > 0 {
 		<h2>networth by placement</h2>
 		<table>
@@ -134,7 +131,7 @@ templ NetworthTable(places []analytics.PlaceRow) {
 }
 
 // SynergyTable renders one row per (synergy, tier).
-templ SynergyTable(rows []analytics.SynergyRow) {
+templ SynergyTable(rows []domain.SynergyRow) {
 	if len(rows) == 0 {
 		@EmptyState("no finalized matches for this filter yet. finalize a few matches first.", nil)
 	} else {
@@ -158,7 +155,7 @@ templ SynergyTable(rows []analytics.SynergyRow) {
 	}
 }
 
-templ ItemTable(rows []analytics.ItemRow) {
+templ ItemTable(rows []domain.ItemRow) {
 	if len(rows) == 0 {
 		@EmptyState("no finalized matches for this filter yet. finalize a few matches first.", nil)
 	} else {
@@ -181,7 +178,7 @@ templ ItemTable(rows []analytics.ItemRow) {
 	}
 }
 
-templ RelicTable(rows []analytics.RelicRow) {
+templ RelicTable(rows []domain.RelicRow) {
 	if len(rows) == 0 {
 		@EmptyState("no finalized matches for this filter yet. finalize a few matches first.", nil)
 	} else {

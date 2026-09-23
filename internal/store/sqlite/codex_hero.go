@@ -135,16 +135,9 @@ func (s *Store) DeleteHero(ctx context.Context, id int64) error {
 	return mapConstraint(err)
 }
 
-// HeroStats is one codex hero with its all-time read-only columns.
-type HeroStats struct {
-	Hero     domain.Hero
-	Lineups  int
-	AvgPlace float64
-}
-
 // ListHeroesWithStats joins the all-time pick count and average placement onto every
 // hero, one plain sqlite group-by over all lineups, drafts included.
-func (s *Store) ListHeroesWithStats(ctx context.Context) ([]HeroStats, error) {
+func (s *Store) ListHeroesWithStats(ctx context.Context) ([]domain.HeroStats, error) {
 	heroes, err := s.ListHeroes(ctx)
 	if err != nil {
 		return nil, err
@@ -155,10 +148,10 @@ func (s *Store) ListHeroesWithStats(ctx context.Context) ([]HeroStats, error) {
 		return nil, err
 	}
 	defer func() { _ = rows.Close() }()
-	tallies := map[int64]HeroStats{}
+	tallies := map[int64]domain.HeroStats{}
 	for rows.Next() {
 		var id int64
-		var hs HeroStats
+		var hs domain.HeroStats
 		if err := rows.Scan(&id, &hs.Lineups, &hs.AvgPlace); err != nil {
 			return nil, err
 		}
@@ -167,9 +160,9 @@ func (s *Store) ListHeroesWithStats(ctx context.Context) ([]HeroStats, error) {
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
-	out := make([]HeroStats, len(heroes))
+	out := make([]domain.HeroStats, len(heroes))
 	for i, h := range heroes {
-		out[i] = HeroStats{Hero: h, Lineups: tallies[h.ID].Lineups, AvgPlace: tallies[h.ID].AvgPlace}
+		out[i] = domain.HeroStats{Hero: h, Lineups: tallies[h.ID].Lineups, AvgPlace: tallies[h.ID].AvgPlace}
 	}
 	return out, nil
 }

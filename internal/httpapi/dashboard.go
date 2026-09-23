@@ -4,7 +4,7 @@ import (
 	"net/http"
 
 	"github.com/a-h/templ"
-	"github.com/lavantien/autochess-buddy/internal/analytics"
+	"github.com/lavantien/autochess-buddy/internal/domain"
 	"github.com/lavantien/autochess-buddy/internal/ui"
 )
 
@@ -32,8 +32,8 @@ func (s *Server) dashView(view string) http.HandlerFunc {
 }
 
 // dashFilter resolves the query params into the analytics filter.
-func (s *Server) dashFilter(r *http.Request) (analytics.Filter, string) {
-	f := analytics.Filter{Source: r.URL.Query().Get("source")}
+func (s *Server) dashFilter(r *http.Request) (domain.Filter, string) {
+	f := domain.Filter{Source: r.URL.Query().Get("source")}
 	version := r.URL.Query().Get("patch")
 	if version != "" {
 		patches, err := s.st.ListPatches(r.Context())
@@ -51,7 +51,7 @@ func (s *Server) dashFilter(r *http.Request) (analytics.Filter, string) {
 
 // dashPanel runs the view's query and renders its table; n is the lineups-in-view
 // count for the filter row.
-func (s *Server) dashPanel(w http.ResponseWriter, r *http.Request, view string, f analytics.Filter) (templ.Component, int, bool) {
+func (s *Server) dashPanel(w http.ResponseWriter, r *http.Request, view string, f domain.Filter) (templ.Component, int, bool) {
 	ctx := r.Context()
 	n := 0
 	count, err := s.dash.LineupsInView(ctx, f)

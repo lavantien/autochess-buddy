@@ -1,17 +1,14 @@
 package ui
 
-import (
-	"github.com/lavantien/autochess-buddy/internal/domain"
-	"github.com/lavantien/autochess-buddy/internal/store/sqlite"
-)
+import "github.com/lavantien/autochess-buddy/internal/domain"
 
 // HeroesPage renders the heroes index with the create disclosure and the
 // read-only analytics columns.
-templ HeroesPage(rows []sqlite.HeroStats, races []domain.Race, classes []domain.Class, st CodexFormState) {
+templ HeroesPage(rows []domain.HeroStats, races []domain.Race, classes []domain.Class, st CodexFormState) {
 	@BaseLayout("codex", "heroes", heroesBody(rows, races, classes, st))
 }
 
-templ heroesBody(rows []sqlite.HeroStats, races []domain.Race, classes []domain.Class, st CodexFormState) {
+templ heroesBody(rows []domain.HeroStats, races []domain.Race, classes []domain.Class, st CodexFormState) {
 	<h1>heroes</h1>
 	<details class="disclosure">
 		<summary>+ new hero</summary>

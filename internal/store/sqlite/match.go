@@ -9,22 +9,8 @@ import (
 	"github.com/lavantien/autochess-buddy/internal/domain"
 )
 
-// MatchFilter narrows the matches list. Zero values pass everything.
-type MatchFilter struct {
-	PatchID int64
-	Source  string // "" | me | pro
-	State   string // "" | draft | final
-}
-
-// MatchListRow is one matches-list row with its pip count and patch column.
-type MatchListRow struct {
-	Match        domain.Match
-	PatchVersion string
-	LineupCount  int
-}
-
 // ListMatches returns matches newest first with lineup counts and patch versions.
-func (s *Store) ListMatches(ctx context.Context, f MatchFilter) ([]MatchListRow, error) {
+func (s *Store) ListMatches(ctx context.Context, f domain.MatchFilter) ([]domain.MatchListRow, error) {
 	where := []string{"1=1"}
 	args := []any{}
 	if f.PatchID != 0 {
@@ -56,8 +42,8 @@ func (s *Store) ListMatches(ctx context.Context, f MatchFilter) ([]MatchListRow,
 	if err != nil {
 		return nil, err
 	}
-	return scanRows(rows, func(r *sql.Rows) (MatchListRow, error) {
-		var v MatchListRow
+	return scanRows(rows, func(r *sql.Rows) (domain.MatchListRow, error) {
+		var v domain.MatchListRow
 		return v, r.Scan(&v.Match.ID, &v.Match.PatchID, &v.Match.PlayedAt, &v.Match.Source,
 			&v.Match.Notes, &v.Match.CreatedAt, &v.Match.FinalizedAt, &v.PatchVersion, &v.LineupCount)
 	})

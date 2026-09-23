@@ -37,7 +37,7 @@ func TestHeroPerformance_Golden(t *testing.T) {
 	costs := []int{5, 4, 2, 1, 3, 3, 1, 5, 2, 4, 1, 5}
 	once := [8]int{1, 1, 1, 1, 1, 1, 1, 1}
 
-	rows, err := e.HeroPerformance(ctx, Filter{Source: "pro"})
+	rows, err := e.HeroPerformance(ctx, domain.Filter{Source: "pro"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -57,7 +57,7 @@ func TestHeroPerformance_Golden(t *testing.T) {
 		checkFinishes(t, "pro hero "+names[i], r.Finishes, once)
 	}
 
-	rows, err = e.HeroPerformance(ctx, Filter{Source: "me"})
+	rows, err = e.HeroPerformance(ctx, domain.Filter{Source: "me"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -73,7 +73,7 @@ func TestHeroPerformance_Golden(t *testing.T) {
 		checkFinishes(t, "me hero", r.Finishes, [8]int{1, 0, 0, 0, 0, 0, 0, 0})
 	}
 
-	rows, err = e.HeroPerformance(ctx, Filter{})
+	rows, err = e.HeroPerformance(ctx, domain.Filter{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -112,7 +112,7 @@ func TestSynergyLift_Golden(t *testing.T) {
 		id   int64
 		k    int
 	}
-	rows, err := e.SynergyPerformance(ctx, Filter{})
+	rows, err := e.SynergyPerformance(ctx, domain.Filter{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -122,7 +122,7 @@ func TestSynergyLift_Golden(t *testing.T) {
 	if rows[0].Kind != "class" || rows[9].Kind != "race" {
 		t.Errorf("default order: rows[0] kind %q rows[9] kind %q, want class then race blocks", rows[0].Kind, rows[9].Kind)
 	}
-	by := make(map[key]SynergyRow, len(rows))
+	by := make(map[key]domain.SynergyRow, len(rows))
 	for _, r := range rows {
 		by[key{r.Kind, r.ID, r.TierCount}] = r
 	}
@@ -174,7 +174,7 @@ func TestSynergyLift_Golden(t *testing.T) {
 		}
 	}
 
-	rows, err = e.SynergyPerformance(ctx, Filter{Source: "me"})
+	rows, err = e.SynergyPerformance(ctx, domain.Filter{Source: "me"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -202,7 +202,7 @@ func TestItemLift_Golden(t *testing.T) {
 	_, e := openAnalytics(t)
 	ctx := context.Background()
 
-	rows, err := e.ItemPerformance(ctx, Filter{Source: "pro"})
+	rows, err := e.ItemPerformance(ctx, domain.Filter{Source: "pro"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -227,7 +227,7 @@ func TestItemLift_Golden(t *testing.T) {
 		checkFinishes(t, "pro item", r.Finishes, fins[i])
 	}
 
-	rows, err = e.ItemPerformance(ctx, Filter{PatchID: 999})
+	rows, err = e.ItemPerformance(ctx, domain.Filter{PatchID: 999})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -240,7 +240,7 @@ func TestRelicLift_Golden(t *testing.T) {
 	_, e := openAnalytics(t)
 	ctx := context.Background()
 
-	rows, err := e.RelicPerformance(ctx, Filter{Source: "pro"})
+	rows, err := e.RelicPerformance(ctx, domain.Filter{Source: "pro"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -261,7 +261,7 @@ func TestRelicLift_Golden(t *testing.T) {
 		checkFinishes(t, "pro relic", r.Finishes, fins[i])
 	}
 
-	rows, err = e.RelicPerformance(ctx, Filter{PatchID: 999})
+	rows, err = e.RelicPerformance(ctx, domain.Filter{PatchID: 999})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -274,7 +274,7 @@ func TestNetworthByPlacement_Golden(t *testing.T) {
 	_, e := openAnalytics(t)
 	ctx := context.Background()
 
-	rows, err := e.NetworthByPlacement(ctx, Filter{Source: "pro"})
+	rows, err := e.NetworthByPlacement(ctx, domain.Filter{Source: "pro"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -287,7 +287,7 @@ func TestNetworthByPlacement_Golden(t *testing.T) {
 		}
 	}
 
-	rows, err = e.NetworthByPlacement(ctx, Filter{Source: "me"})
+	rows, err = e.NetworthByPlacement(ctx, domain.Filter{Source: "me"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -295,7 +295,7 @@ func TestNetworthByPlacement_Golden(t *testing.T) {
 		t.Errorf("me: %+v, want one row placement 1 n 1 avg 1200", rows)
 	}
 
-	rows, err = e.NetworthByPlacement(ctx, Filter{})
+	rows, err = e.NetworthByPlacement(ctx, domain.Filter{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -312,7 +312,7 @@ func TestNetworthByPlacement_Golden(t *testing.T) {
 		}
 	}
 
-	rows, err = e.NetworthByPlacement(ctx, Filter{PatchID: 999})
+	rows, err = e.NetworthByPlacement(ctx, domain.Filter{PatchID: 999})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -326,12 +326,12 @@ func TestFieldAvg_ProExactly45(t *testing.T) {
 	ctx := context.Background()
 
 	for _, c := range []struct {
-		f    Filter
+		f    domain.Filter
 		want fieldRaw
 	}{
-		{Filter{Source: "pro"}, fieldRaw{4.5, 32}},
-		{Filter{Source: "me"}, fieldRaw{1, 1}},
-		{Filter{PatchID: 999}, fieldRaw{}},
+		{domain.Filter{Source: "pro"}, fieldRaw{4.5, 32}},
+		{domain.Filter{Source: "me"}, fieldRaw{1, 1}},
+		{domain.Filter{PatchID: 999}, fieldRaw{}},
 	} {
 		f, err := e.queryField(ctx, c.f)
 		if err != nil {
@@ -348,16 +348,16 @@ func TestLineupsInView_Filters(t *testing.T) {
 	ctx := context.Background()
 
 	for _, c := range []struct {
-		f    Filter
+		f    domain.Filter
 		want int
 	}{
-		{Filter{}, 33},
-		{Filter{Source: "pro"}, 32},
-		{Filter{Source: "me"}, 1},
-		{Filter{PatchID: 1}, 16},
-		{Filter{PatchID: 2}, 17},
-		{Filter{PatchID: 2, Source: "pro"}, 16},
-		{Filter{PatchID: 999}, 0},
+		{domain.Filter{}, 33},
+		{domain.Filter{Source: "pro"}, 32},
+		{domain.Filter{Source: "me"}, 1},
+		{domain.Filter{PatchID: 1}, 16},
+		{domain.Filter{PatchID: 2}, 17},
+		{domain.Filter{PatchID: 2, Source: "pro"}, 16},
+		{domain.Filter{PatchID: 999}, 0},
 	} {
 		n, err := e.LineupsInView(ctx, c.f)
 		if err != nil {
@@ -373,7 +373,7 @@ func TestLift_EmptySliceFallsBackToFieldAvg(t *testing.T) {
 	_, e := openAnalytics(t)
 	ctx := context.Background()
 	rapid.Check(t, func(t *rapid.T) {
-		f := Filter{
+		f := domain.Filter{
 			PatchID: rapid.SampledFrom([]int64{0, 1, 2, 999}).Draw(t, "patch"),
 			Source:  rapid.SampledFrom([]string{"", "pro", "me"}).Draw(t, "source"),
 		}

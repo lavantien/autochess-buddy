@@ -24,18 +24,18 @@ func TestListMatches_FiltersPatchSourceState(t *testing.T) {
 
 	cases := []struct {
 		name   string
-		filter MatchFilter
+		filter domain.MatchFilter
 		want   []int64 // match ids, newest played_at first
 	}{
-		{"all", MatchFilter{}, []int64{6, 5, 4, 3, 2, 1}},
-		{"patch 1", MatchFilter{PatchID: 1}, []int64{2, 1}},
-		{"patch 2", MatchFilter{PatchID: 2}, []int64{6, 5, 4, 3}},
-		{"source me", MatchFilter{Source: "me"}, []int64{5}},
-		{"source pro", MatchFilter{Source: "pro"}, []int64{6, 4, 3, 2, 1}},
-		{"state draft", MatchFilter{State: "draft"}, []int64{6}},
-		{"state final", MatchFilter{State: "final"}, []int64{5, 4, 3, 2, 1}},
-		{"pro final", MatchFilter{Source: "pro", State: "final"}, []int64{4, 3, 2, 1}},
-		{"patch 1 pro final", MatchFilter{PatchID: 1, Source: "pro", State: "final"}, []int64{2, 1}},
+		{"all", domain.MatchFilter{}, []int64{6, 5, 4, 3, 2, 1}},
+		{"patch 1", domain.MatchFilter{PatchID: 1}, []int64{2, 1}},
+		{"patch 2", domain.MatchFilter{PatchID: 2}, []int64{6, 5, 4, 3}},
+		{"source me", domain.MatchFilter{Source: "me"}, []int64{5}},
+		{"source pro", domain.MatchFilter{Source: "pro"}, []int64{6, 4, 3, 2, 1}},
+		{"state draft", domain.MatchFilter{State: "draft"}, []int64{6}},
+		{"state final", domain.MatchFilter{State: "final"}, []int64{5, 4, 3, 2, 1}},
+		{"pro final", domain.MatchFilter{Source: "pro", State: "final"}, []int64{4, 3, 2, 1}},
+		{"patch 1 pro final", domain.MatchFilter{PatchID: 1, Source: "pro", State: "final"}, []int64{2, 1}},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -55,7 +55,7 @@ func TestListMatches_FiltersPatchSourceState(t *testing.T) {
 	}
 
 	// n/8 pip data and the patch column for the list page.
-	rows, err := s.ListMatches(ctx, MatchFilter{})
+	rows, err := s.ListMatches(ctx, domain.MatchFilter{})
 	if err != nil {
 		t.Fatalf("list: %v", err)
 	}

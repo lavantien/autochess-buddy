@@ -7,7 +7,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/lavantien/autochess-buddy/internal/analytics"
 	"github.com/lavantien/autochess-buddy/internal/domain"
 	"github.com/lavantien/autochess-buddy/internal/seed"
 )
@@ -18,7 +17,7 @@ func TestDashboard_FullPageVsPartialOnHXRequest(t *testing.T) {
 		t.Fatalf("seed: %v", err)
 	}
 	fake.viewCount = 32
-	fake.heroRows = []analytics.HeroRow{{
+	fake.heroRows = []domain.HeroRow{{
 		Hero:  domain.Hero{ID: 1, Name: "sky breaker", Cost: 5},
 		Picks: 10, Top4: 5, AvgPlace: 4.0, PickRate: 0.4, Top4Rate: 0.5,
 		Floor: 0.4, VsField: -0.5, Finishes: [8]int{1, 1, 1, 2, 2, 1, 1, 1},

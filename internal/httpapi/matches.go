@@ -5,13 +5,12 @@ import (
 	"net/http"
 
 	"github.com/lavantien/autochess-buddy/internal/domain"
-	"github.com/lavantien/autochess-buddy/internal/store/sqlite"
 	"github.com/lavantien/autochess-buddy/internal/ui"
 )
 
 // matchList renders the matches table with its plain GET filters.
 func (s *Server) matchList(w http.ResponseWriter, r *http.Request) {
-	f := sqlite.MatchFilter{
+	f := domain.MatchFilter{
 		Source: r.URL.Query().Get("source"),
 		State:  r.URL.Query().Get("state"),
 	}
