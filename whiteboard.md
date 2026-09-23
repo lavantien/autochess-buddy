@@ -108,6 +108,7 @@ Defense:
 Seven entities over plain tables plus three junction shapes: hero_races/hero_classes (1-2 lineages each), item_recipes (multi select), and tier ladders for races and classes (counts 2/4/6 map to tier names, edited as ladder rows). Deletes that history still references map the sqlite foreign key violation to a friendly "existing matches keep their history" answer on the edit page; hx deletes answer with HX-Redirect to the index so the whole page reloads to the new truth.
 
 Defense:
+- synergies 422 errors are scoped per ladder: field keys carry the entity id (races-3-name, races-3-tier), so a tier error renders exactly once under the ladder that failed, names the entity in its copy, and the rerender keeps the typed name, count and effect under the same keys. the name-taken copy comes from a real uniqueness pre-check over the list call, never from mapping an unknown store error to that sentence.
 - junction rewrites in one tx: updating a hero replaces its lineage rows wholesale rather than diffing, simplest correct shape, rollback leaves nothing half written.
 - delete in place and re add would orphan history: the spec says keep it. FK enforcement is on per connection, and the error mapping lives in the store so every caller renders the same copy.
 

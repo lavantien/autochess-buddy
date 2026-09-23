@@ -58,6 +58,13 @@ func (st CodexFormState) err(field string) string {
 	return ""
 }
 
+// LadderKey scopes a synergies form field to one race or class so errors and
+// typed values land under the ladder that issued them. Handlers build error
+// fields and value keys with it; the template binds with the same call.
+func LadderKey(entity string, id int64, field string) string {
+	return entity + "-" + itoa(id) + "-" + field
+}
+
 func (st CodexFormState) firstErrField() string {
 	if len(st.Errs) == 0 {
 		return ""

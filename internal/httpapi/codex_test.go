@@ -165,6 +165,66 @@ func TestProAndPatch_303And422Pairs(t *testing.T) {
 	}
 }
 
+func TestSynergyCreate_422NamesFieldAndKeepsValue(t *testing.T) {
+	f := seedCodexFix(t)
+	rec := f.post(t, "POST", "/races", "name=", false)
+	if rec.Code != http.StatusUnprocessableEntity {
+		t.Fatalf("status = %d, want 422: %s", rec.Code, rec.Body.String())
+	}
+	body := rec.Body.String()
+	if got := strings.Count(body, "name is required."); got != 1 {
+		t.Fatalf("name error must render once under the race create form, got %d: %s", got, body)
+	}
+	if !strings.Contains(body, "data-autofocus") {
+		t.Fatalf("first bad field must take focus, got %s", body)
+	}
+	// A taken name keeps the typed value in the create input.
+	rec = f.post(t, "POST", "/races", "name=beast", false)
+	if rec.Code != http.StatusUnprocessableEntity {
+		t.Fatalf("taken status = %d, want 422", rec.Code)
+	}
+	body = rec.Body.String()
+	if !strings.Contains(body, "that name is taken.") {
+		t.Fatalf("body must render the taken copy, got %s", body)
+	}
+	if !strings.Contains(body, `value="beast" data-autofocus`) {
+		t.Fatalf("create input must keep the typed value and take focus, got %s", body)
+	}
+}
+
+func TestSynergyRename_422ScopedToItsLadder(t *testing.T) {
+	f := seedCodexFix(t)
+	race, _ := f.st.CreateRace(context.Background(), domain.Race{Name: "human"}, nil)
+	rec := f.post(t, "POST", "/races/"+strconv.FormatInt(race, 10), "mode=save_name&name=beast", false)
+	if rec.Code != http.StatusUnprocessableEntity {
+		t.Fatalf("status = %d, want 422: %s", rec.Code, rec.Body.String())
+	}
+	body := rec.Body.String()
+	if got := strings.Count(body, "that name is taken."); got != 1 {
+		t.Fatalf("taken copy must render exactly once, got %d: %s", got, body)
+	}
+	if !strings.Contains(body, `value="beast" data-autofocus`) {
+		t.Fatalf("rename input must keep the typed value and take focus, got %s", body)
+	}
+}
+
+func TestSaveTier_422ScopedNamedAndKeepsTypedValues(t *testing.T) {
+	f := seedCodexFix(t)
+	race, _ := f.st.CreateRace(context.Background(), domain.Race{Name: "human"}, nil)
+	_, _ = f.st.CreateRace(context.Background(), domain.Race{Name: "beast"}, nil)
+	rec := f.post(t, "POST", "/races/"+strconv.FormatInt(race, 10), "mode=save_tier&count=0&effect=fury", false)
+	if rec.Code != http.StatusUnprocessableEntity {
+		t.Fatalf("status = %d, want 422: %s", rec.Code, rec.Body.String())
+	}
+	body := rec.Body.String()
+	if got := strings.Count(body, "human tier count must be at least 1."); got != 1 {
+		t.Fatalf("tier error must name the entity and render once, got %d: %s", got, body)
+	}
+	if !strings.Contains(body, `value="0"`) || !strings.Contains(body, `value="fury"`) {
+		t.Fatalf("tier 422 must keep the typed count and effect, got %s", body)
+	}
+}
+
 // TestCodexIndexShowsSeededAnalytics pins the read-only columns on real data.
 func TestCodexIndexShowsSeededAnalytics(t *testing.T) {
 	h, st, _ := newTestServer(t)

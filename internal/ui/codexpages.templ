@@ -359,7 +359,10 @@ templ synergiesBody(races, classes []LadderEntry, st CodexFormState) {
 			<details class="disclosure">
 				<summary>+ new race</summary>
 				<form method="post" action="/races" class="stack codexform">
-					<label><span>name</span><input type="text" name="name" data-autofocus?={ st.autofocus("race-name") }/></label>
+					<label><span>name</span><input type="text" name="name" value={ st.val("races-name", "") } data-autofocus?={ st.autofocus("races-name") }/></label>
+					if msg := st.err("races-name"); msg != "" {
+						<p class="fielderr">{ msg }</p>
+					}
 					<button type="submit" class="button button-primary">save race</button>
 				</form>
 			</details>
@@ -375,7 +378,10 @@ templ synergiesBody(races, classes []LadderEntry, st CodexFormState) {
 			<details class="disclosure">
 				<summary>+ new class</summary>
 				<form method="post" action="/classes" class="stack codexform">
-					<label><span>name</span><input type="text" name="name" data-autofocus?={ st.autofocus("class-name") }/></label>
+					<label><span>name</span><input type="text" name="name" value={ st.val("classes-name", "") } data-autofocus?={ st.autofocus("classes-name") }/></label>
+					if msg := st.err("classes-name"); msg != "" {
+						<p class="fielderr">{ msg }</p>
+					}
 					<button type="submit" class="button button-primary">save class</button>
 				</form>
 			</details>
@@ -394,8 +400,11 @@ templ LadderEditor(entity string, e LadderEntry, st CodexFormState) {
 	<div class="ladder">
 		<form method="post" action={ "/" + entity + "/" + itoa(e.ID) } class="inline-form">
 			<input type="hidden" name="mode" value="save_name"/>
-			<input type="text" name="name" value={ e.Name } aria-label="name"/>
+			<input type="text" name="name" value={ st.val(LadderKey(entity, e.ID, "name"), e.Name) } data-autofocus?={ st.autofocus(LadderKey(entity, e.ID, "name")) } aria-label="name"/>
 			<button type="submit" class="button button-quiet" hx-disable="this">save { entity }</button>
+			if msg := st.err(LadderKey(entity, e.ID, "name")); msg != "" {
+				<p class="fielderr">{ msg }</p>
+			}
 		</form>
 		<table>
 			<thead><tr><th>count</th><th>effect</th></tr></thead>
@@ -417,10 +426,10 @@ templ LadderEditor(entity string, e LadderEntry, st CodexFormState) {
 		</table>
 		<form method="post" action={ "/" + entity + "/" + itoa(e.ID) } class="inline-form tier-add">
 			<input type="hidden" name="mode" value="save_tier"/>
-			<input type="number" name="count" min="1" placeholder="count" aria-label="count"/>
-			<input type="text" name="effect" placeholder="effect" aria-label="effect"/>
+			<input type="number" name="count" min="1" placeholder="count" value={ st.val(LadderKey(entity, e.ID, "tier-count"), "") } aria-label="count"/>
+			<input type="text" name="effect" placeholder="effect" value={ st.val(LadderKey(entity, e.ID, "tier-effect"), "") } aria-label="effect"/>
 			<button type="submit" class="button button-primary">save tier</button>
-			if msg := st.err("tier"); msg != "" {
+			if msg := st.err(LadderKey(entity, e.ID, "tier")); msg != "" {
 				<p class="fielderr">{ msg }</p>
 			}
 		</form>
