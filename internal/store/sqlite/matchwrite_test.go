@@ -325,8 +325,14 @@ func TestWriteBadRefsRefuseAndPairsRoundTrip(t *testing.T) {
 		name string
 		call func() error
 	}{
-		{"stale hero in add lineup", func() error { _, err := s.AddLineup(ctx, domain.AddLineupCmd{MatchID: 6, Placement: 4, Slots: []domain.Slot{{Hero: domain.Hero{ID: 999}, Stars: 2}}}); return err }},
-		{"stale item in add lineup", func() error { _, err := s.AddLineup(ctx, domain.AddLineupCmd{MatchID: 6, Placement: 4, Slots: []domain.Slot{{Hero: domain.Hero{ID: 1}, Stars: 2, Items: []domain.Item{{ID: 999}}}}}); return err }},
+		{"stale hero in add lineup", func() error {
+			_, err := s.AddLineup(ctx, domain.AddLineupCmd{MatchID: 6, Placement: 4, Slots: []domain.Slot{{Hero: domain.Hero{ID: 999}, Stars: 2}}})
+			return err
+		}},
+		{"stale item in add lineup", func() error {
+			_, err := s.AddLineup(ctx, domain.AddLineupCmd{MatchID: 6, Placement: 4, Slots: []domain.Slot{{Hero: domain.Hero{ID: 1}, Stars: 2, Items: []domain.Item{{ID: 999}}}}})
+			return err
+		}},
 		{"stale hero in add slot", func() error { _, err := s.AddSlot(ctx, 34, 999, 2); return err }},
 		{"stale item in add slot item", func() error { return s.AddSlotItem(ctx, slot, 999) }},
 		{"stale relic in add lineup relic", func() error { return s.AddLineupRelic(ctx, 34, 999) }},

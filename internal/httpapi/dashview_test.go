@@ -19,7 +19,7 @@ func TestDashboard_HXRootServesBarePanelAndCount(t *testing.T) {
 	}
 	fake.viewCount = 7
 	fake.heroRows = []domain.HeroRow{{
-		Hero: domain.Hero{ID: 2, Name: "grim jaw", Cost: 4},
+		Hero:  domain.Hero{ID: 2, Name: "grim jaw", Cost: 4},
 		Picks: 8, Top4: 4, AvgPlace: 4.5, PickRate: 0.25, Top4Rate: 0.5,
 	}}
 

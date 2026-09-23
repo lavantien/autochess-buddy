@@ -41,7 +41,10 @@ func TestCodexCreate_DuplicateNaturalKeyFails(t *testing.T) {
 		{"hero", func() error { _, err := s.CreateHero(ctx, domain.Hero{Name: "twin", Cost: 2}); return err }},
 		{"item", func() error { _, err := s.CreateItem(ctx, domain.Item{Name: "twin", Tier: 1}, nil); return err }},
 		{"relic", func() error { _, err := s.CreateRelic(ctx, domain.Relic{Name: "twin"}); return err }},
-		{"patch", func() error { _, err := s.CreatePatch(ctx, domain.Patch{Version: "9.0", ReleasedAt: "2026-01-01"}); return err }},
+		{"patch", func() error {
+			_, err := s.CreatePatch(ctx, domain.Patch{Version: "9.0", ReleasedAt: "2026-01-01"})
+			return err
+		}},
 		{"pro", func() error { _, err := s.CreatePro(ctx, domain.Pro{Name: "twin"}); return err }},
 	}
 	for _, tc := range cases {
