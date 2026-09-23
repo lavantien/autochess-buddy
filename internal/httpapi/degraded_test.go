@@ -57,9 +57,8 @@ func TestClosedStore_MutationsFallBack(t *testing.T) {
 	sl := strconv.FormatInt(f.slotID, 10)
 	it := strconv.FormatInt(f.itemID, 10)
 	rl := strconv.FormatInt(f.relicID, 10)
-	// createMatch has no row here: its store-error fallback sits behind a
-	// validation mirror (the closed store yields an empty patch list, which
-	// fails validation first), so the arm is unreachable through HTTP.
+	// createMatch has no row here: its closed-store rerender path is covered by
+	// TestClosedStore_CreateMatchFallsBackTo422 below.
 	mutations := []struct{ name, method, path, form string }{
 		{"finalize", "POST", "/matches/" + m + "/finalize", ""},
 		{"add lineup", "POST", "/matches/" + m + "/lineups", "match_id=" + m + "&placement=3&label=x"},
@@ -115,15 +114,42 @@ func TestClosedStore_SynergyCreateFallsBackTo422(t *testing.T) {
 }
 
 func TestClosedStore_SynergyCreateNonHXRedirects(t *testing.T) {
-	// Pinned quirk: the non-hx synergy fallback rides the generic
-	// mutationFallback, so a plain client lands on /matches, not /races.
+	// A dead store on synergy create sends the plain client back to the
+	// synergies tab it came from, not the matches list.
 	f := seedEditor(t)
 	if err := f.st.Close(); err != nil {
 		t.Fatalf("close store: %v", err)
 	}
-	rec := f.post(t, "POST", "/races", "name=ember", false)
-	if rec.Code != http.StatusSeeOther || rec.Header().Get("Location") != "/matches" {
-		t.Fatalf("status = %d location = %q, want 303 /matches", rec.Code, rec.Header().Get("Location"))
+	for _, tc := range []struct{ path, want string }{
+		{"/races", "/races"},
+		{"/classes", "/classes"},
+	} {
+		t.Run(tc.path, func(t *testing.T) {
+			rec := f.post(t, "POST", tc.path, "name=ember", false)
+			if rec.Code != http.StatusSeeOther || rec.Header().Get("Location") != tc.want {
+				t.Fatalf("status = %d location = %q, want 303 %s", rec.Code, rec.Header().Get("Location"), tc.want)
+			}
+		})
+	}
+}
+
+func TestClosedStore_CreateMatchFallsBackTo422(t *testing.T) {
+	// A closed store fails inside entry.CreateMatch, so the handler rerenders
+	// the form instead of redirecting or 500ing. hx gets the same full-page
+	// answer: this handler is not fragment based.
+	f := seedEditor(t)
+	if err := f.st.Close(); err != nil {
+		t.Fatalf("close store: %v", err)
+	}
+	form := "patch_id=1&source=pro&played_at=2026-09-23T20:15&notes=x"
+	for _, hx := range []bool{false, true} {
+		rec := f.post(t, "POST", "/matches/new", form, hx)
+		if rec.Code != http.StatusUnprocessableEntity {
+			t.Fatalf("hx=%v status = %d, want 422 rerender: %s", hx, rec.Code, truncBody(rec.Body.String()))
+		}
+		if !strings.Contains(rec.Body.String(), "<h1>new match</h1>") {
+			t.Fatalf("hx=%v body must rerender the new match page, got %s", hx, truncBody(rec.Body.String()))
+		}
 	}
 }
 

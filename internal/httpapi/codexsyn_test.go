@@ -14,8 +14,8 @@ import (
 func TestClassCreate_303And422Pair(t *testing.T) {
 	f := seedEditor(t)
 	rec := f.post(t, "POST", "/classes", "name=paladin", false)
-	if rec.Code != http.StatusSeeOther || rec.Header().Get("Location") != "/races" {
-		t.Fatalf("create class status = %d location = %q, want 303 /races: %s", rec.Code, rec.Header().Get("Location"), truncBody(rec.Body.String()))
+	if rec.Code != http.StatusSeeOther || rec.Header().Get("Location") != "/classes" {
+		t.Fatalf("create class status = %d location = %q, want 303 /classes: %s", rec.Code, rec.Header().Get("Location"), truncBody(rec.Body.String()))
 	}
 	classes, err := f.st.ListClasses(context.Background())
 	if err != nil {
@@ -63,8 +63,8 @@ func TestClassLadder_TierAppendReplaceDelete(t *testing.T) {
 	post := func(form string) *httptest.ResponseRecorder {
 		return f.post(t, "POST", path, form, false)
 	}
-	if rec := post("mode=save_tier&count=3&effect=smite"); rec.Code != http.StatusSeeOther {
-		t.Fatalf("append tier status = %d, want 303: %s", rec.Code, truncBody(rec.Body.String()))
+	if rec := post("mode=save_tier&count=3&effect=smite"); rec.Code != http.StatusSeeOther || rec.Header().Get("Location") != "/classes" {
+		t.Fatalf("append tier status = %d location = %q, want 303 /classes: %s", rec.Code, rec.Header().Get("Location"), truncBody(rec.Body.String()))
 	}
 	_, tiers, err := f.st.GetClass(ctx, class)
 	if err != nil || len(tiers) != 1 || tiers[0].Count != 3 || tiers[0].Effect != "smite" {
@@ -131,16 +131,19 @@ func TestSynergyUpdate_UnknownModeRerendersWith422(t *testing.T) {
 	}
 }
 
-func TestSynergyUpdate_MissingLadderRedirectsToRaces(t *testing.T) {
+func TestSynergyUpdate_MissingLadderRedirectsPerEntity(t *testing.T) {
 	f := seedEditor(t)
-	// Both ladders fall back to /races; pin the behavior.
-	for _, path := range []string{"/races/999", "/classes/999"} {
-		rec := f.post(t, "POST", path, "mode=save_name&name=ghost", false)
+	// Each ladder falls back to its own tab.
+	for _, tc := range []struct{ path, want string }{
+		{"/races/999", "/races"},
+		{"/classes/999", "/classes"},
+	} {
+		rec := f.post(t, "POST", tc.path, "mode=save_name&name=ghost", false)
 		if rec.Code != http.StatusSeeOther {
-			t.Fatalf("%s status = %d, want 303: %s", path, rec.Code, truncBody(rec.Body.String()))
+			t.Fatalf("%s status = %d, want 303: %s", tc.path, rec.Code, truncBody(rec.Body.String()))
 		}
-		if loc := rec.Header().Get("Location"); loc != "/races" {
-			t.Fatalf("%s location = %q, want /races", path, loc)
+		if loc := rec.Header().Get("Location"); loc != tc.want {
+			t.Fatalf("%s location = %q, want %s", tc.path, loc, tc.want)
 		}
 	}
 }
@@ -200,9 +203,8 @@ func TestDeleteRaceAndClassRoutes(t *testing.T) {
 			t.Fatal("race row survived delete")
 		}
 	}
-	// Pinned quirk: races/classes pass a nil in-use probe to codexDelete, so a
-	// race still held by the seeded hero deletes with a plain 303 instead of
-	// the 409 every other entity enforces. Flagged in the coverage report.
+	// A race still held by the seeded hero answers with the 409 synergies page
+	// and the conflict copy under its ladder, not a bogus 303.
 	hero, err := f.st.GetHeroByName(ctx, f.heroName)
 	if err != nil {
 		t.Fatalf("hero: %v", err)
@@ -211,8 +213,24 @@ func TestDeleteRaceAndClassRoutes(t *testing.T) {
 		t.Fatal("seeded hero has no race to delete under it")
 	}
 	rec = f.post(t, "DELETE", "/races/"+strconv.FormatInt(hero.Races[0].ID, 10), "", false)
-	if rec.Code != http.StatusSeeOther {
-		t.Fatalf("in-use race delete status = %d, want pinned 303", rec.Code)
+	if rec.Code != http.StatusConflict {
+		t.Fatalf("in-use race delete status = %d, want 409: %s", rec.Code, truncBody(rec.Body.String()))
+	}
+	body := rec.Body.String()
+	if !strings.Contains(body, "<h1>races</h1>") || !strings.Contains(body, domain.ErrInUse.Error()) {
+		t.Fatalf("in-use race delete must rerender the synergies page with the conflict copy, got %s", truncBody(body))
+	}
+	// The hx arm of the same contract on the class side: the class behind the
+	// hero refuses too, with no HX-Redirect pretending the delete landed.
+	if len(hero.Classes) == 0 {
+		t.Fatal("seeded hero has no class to delete under it")
+	}
+	rec = f.post(t, "DELETE", "/classes/"+strconv.FormatInt(hero.Classes[0].ID, 10), "", true)
+	if rec.Code != http.StatusConflict {
+		t.Fatalf("in-use class delete hx status = %d, want 409: %s", rec.Code, truncBody(rec.Body.String()))
+	}
+	if hxr := rec.Header().Get("HX-Redirect"); hxr != "" {
+		t.Fatalf("in-use class delete must not send HX-Redirect, got %q", hxr)
 	}
 	// The FK refuses the delete: the race must survive behind the hero.
 	races, err = f.st.ListRaces(context.Background())
