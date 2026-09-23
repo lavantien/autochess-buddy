@@ -37,31 +37,15 @@ func shoot(out string) error {
 		return err
 	}
 	dbPath := filepath.Join(os.TempDir(), fmt.Sprintf("acshot-%d.db", time.Now().UnixNano()))
-	st, err := sqlite.Open(dbPath)
-	if err != nil {
-		return fmt.Errorf("open sqlite: %w", err)
-	}
-	defer func() {
-		_ = st.Close()
-		_ = os.Remove(dbPath)
-	}()
-	if err := seed.Load(st.DB); err != nil {
-		return fmt.Errorf("seed: %w", err)
-	}
-	eng, err := analytics.New(dbPath, &st.WriteMu)
-	if err != nil {
-		return fmt.Errorf("open duckdb: %w", err)
-	}
-	defer func() { _ = eng.Close() }()
-
 	lis, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
 		return err
 	}
-	srv := &http.Server{Handler: httpapi.New(nil, st, service.EntryService{St: st}, eng)}
-	go func() { _ = srv.Serve(lis) }()
-	defer func() { _ = srv.Shutdown(context.Background()) }()
-	base := "http://" + lis.Addr().String()
+	base, stop, err := bootSeededApp(lis, dbPath)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = stop() }()
 
 	pw, err := playwright.Run()
 	if err != nil {
@@ -97,6 +81,36 @@ func shoot(out string) error {
 		return err
 	}
 	return refreshReadme("readme.md", filepath.ToSlash(out))
+}
+
+// bootSeededApp opens sqlite plus duckdb over dbPath, seeds, and serves the
+// app on lis; stop drains the server, closes the engines, and removes the
+// scratch db.
+func bootSeededApp(lis net.Listener, dbPath string) (base string, stop func() error, err error) {
+	st, err := sqlite.Open(dbPath)
+	if err != nil {
+		return "", nil, fmt.Errorf("open sqlite: %w", err)
+	}
+	if err := seed.Load(st.DB); err != nil {
+		_ = st.Close()
+		_ = os.Remove(dbPath)
+		return "", nil, fmt.Errorf("seed: %w", err)
+	}
+	eng, err := analytics.New(dbPath, &st.WriteMu)
+	if err != nil {
+		_ = st.Close()
+		_ = os.Remove(dbPath)
+		return "", nil, fmt.Errorf("open duckdb: %w", err)
+	}
+	srv := &http.Server{Handler: httpapi.New(nil, st, service.EntryService{St: st}, eng)}
+	go func() { _ = srv.Serve(lis) }()
+	return "http://" + lis.Addr().String(), func() error {
+		err := srv.Shutdown(context.Background())
+		_ = eng.Close()
+		_ = st.Close()
+		_ = os.Remove(dbPath)
+		return err
+	}, nil
 }
 
 const (
