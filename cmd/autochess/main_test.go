@@ -7,7 +7,9 @@ import (
 	"log/slog"
 	"net"
 	"net/http"
+	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -103,5 +105,59 @@ func TestServe_ReturnsListenError(t *testing.T) {
 	}
 	if errors.Is(err, http.ErrServerClosed) {
 		t.Fatalf("want a real listen error, got %v", err)
+	}
+}
+
+// fileAsParent builds a db path whose parent is a regular file, so MkdirAll
+// fails before any engine opens.
+func fileAsParent(t *testing.T) string {
+	t.Helper()
+	f := filepath.Join(t.TempDir(), "blocker")
+	if err := os.WriteFile(f, []byte("x"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	return filepath.Join(f, "app.db")
+}
+
+func TestRunSeed_BadDirFails(t *testing.T) {
+	if err := runSeed(fileAsParent(t)); err == nil {
+		t.Fatal("want mkdir error, got nil")
+	}
+}
+
+func TestRunSeed_DirectoryAsDbFails(t *testing.T) {
+	if err := runSeed(t.TempDir()); err == nil {
+		t.Fatal("want open error on a directory db path, got nil")
+	}
+}
+
+func TestRunSeed_SecondSeedRefused(t *testing.T) {
+	dbPath := filepath.Join(t.TempDir(), "app.db")
+	if err := runSeed(dbPath); err != nil {
+		t.Fatalf("first seed: %v", err)
+	}
+	if err := runSeed(dbPath); err == nil {
+		t.Fatal("want refusal seeding a non-empty db, got nil")
+	}
+}
+
+func TestRun_BadDirFails(t *testing.T) {
+	if err := run(context.Background(), "127.0.0.1:0", fileAsParent(t), quietLog()); err == nil {
+		t.Fatal("want mkdir error, got nil")
+	}
+}
+
+func TestRun_DirectoryAsDbFails(t *testing.T) {
+	err := run(context.Background(), "127.0.0.1:0", t.TempDir(), quietLog())
+	if err == nil || !strings.Contains(err.Error(), "open sqlite") {
+		t.Fatalf("err = %v, want open sqlite failure", err)
+	}
+}
+
+func TestRun_QuoteInDbPathFailsDuckdbAttach(t *testing.T) {
+	dbPath := filepath.Join(t.TempDir(), "qu'ote.db")
+	err := run(context.Background(), "127.0.0.1:0", dbPath, quietLog())
+	if err == nil || !strings.Contains(err.Error(), "open duckdb") {
+		t.Fatalf("err = %v, want open duckdb failure", err)
 	}
 }

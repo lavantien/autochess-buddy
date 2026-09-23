@@ -171,3 +171,47 @@ func TestSynergyIndex_RendersBothLaddersAndTierRows(t *testing.T) {
 		}
 	}
 }
+
+func TestDeleteRaceAndClassRoutes(t *testing.T) {
+	f := seedEditor(t)
+	ctx := context.Background()
+	race, err := f.st.CreateRace(ctx, domain.Race{Name: "ember"}, nil)
+	if err != nil {
+		t.Fatalf("create race: %v", err)
+	}
+	class, err := f.st.CreateClass(ctx, domain.Class{Name: "seer"}, nil)
+	if err != nil {
+		t.Fatalf("create class: %v", err)
+	}
+	rec := f.post(t, "DELETE", "/races/"+strconv.FormatInt(race, 10), "", false)
+	if rec.Code != http.StatusSeeOther || rec.Header().Get("Location") != "/races" {
+		t.Fatalf("delete race status = %d location = %q, want 303 /races", rec.Code, rec.Header().Get("Location"))
+	}
+	rec = f.post(t, "DELETE", "/classes/"+strconv.FormatInt(class, 10), "", true)
+	if rec.Code != http.StatusOK || rec.Header().Get("HX-Redirect") != "/classes" {
+		t.Fatalf("delete class hx status = %d redirect = %q, want 200 /classes", rec.Code, rec.Header().Get("HX-Redirect"))
+	}
+	races, err := f.st.ListRaces(ctx)
+	if err != nil {
+		t.Fatalf("list races: %v", err)
+	}
+	for _, r := range races {
+		if r.ID == race {
+			t.Fatal("race row survived delete")
+		}
+	}
+	// Pinned quirk: races/classes pass a nil in-use probe to codexDelete, so a
+	// race still held by the seeded hero deletes with a plain 303 instead of
+	// the 409 every other entity enforces. Flagged in the coverage report.
+	hero, err := f.st.GetHeroByName(ctx, f.heroName)
+	if err != nil {
+		t.Fatalf("hero: %v", err)
+	}
+	if len(hero.Races) == 0 {
+		t.Fatal("seeded hero has no race to delete under it")
+	}
+	rec = f.post(t, "DELETE", "/races/"+strconv.FormatInt(hero.Races[0].ID, 10), "", false)
+	if rec.Code != http.StatusSeeOther {
+		t.Fatalf("in-use race delete status = %d, want pinned 303", rec.Code)
+	}
+}

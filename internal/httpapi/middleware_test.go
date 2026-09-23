@@ -70,3 +70,13 @@ func TestOriginGuard_SkipsGet(t *testing.T) {
 		t.Fatalf("get with foreign origin: status = %d, want 200", rec.Code)
 	}
 }
+
+func TestHeaderHost_UnparseableOrHostlessOrigin(t *testing.T) {
+	for _, origin := range []string{"://bad", "not-a-url"} {
+		req := httptest.NewRequest(http.MethodPost, "/matches/new", nil)
+		req.Header.Set("Origin", origin)
+		if host, ok := headerHost(req); ok || host != "" {
+			t.Fatalf("origin %q: headerHost = (%q, %v), want empty false", origin, host, ok)
+		}
+	}
+}

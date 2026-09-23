@@ -62,6 +62,35 @@ func TestParseProfileSkipsMatchedPaths(t *testing.T) {
 	}
 }
 
+func TestSplitSkip(t *testing.T) {
+	for _, tc := range []struct {
+		in   string
+		want []string
+	}{
+		{"", nil},
+		{"_templ.go", []string{"_templ.go"}},
+		{"a.go,b.go", []string{"a.go", "b.go"}},
+	} {
+		got := splitSkip(tc.in)
+		if len(got) != len(tc.want) {
+			t.Fatalf("splitSkip(%q) = %v, want %v", tc.in, got, tc.want)
+		}
+		for i := range got {
+			if got[i] != tc.want[i] {
+				t.Fatalf("splitSkip(%q) = %v, want %v", tc.in, got, tc.want)
+			}
+		}
+	}
+}
+
+func TestRunWriteFailureReturnsError(t *testing.T) {
+	profile := writeProfile(t, "mode: atomic\na.go:1.1,2.2 10 10\n")
+	out := filepath.Join(t.TempDir(), "nodir", "coverage.json")
+	if _, err := run(profile, out, 90, nil); err == nil {
+		t.Fatal("want write error, got nil")
+	}
+}
+
 func TestParseProfileDedupsDuplicateBlocks(t *testing.T) {
 	// -coverpkg profiles repeat each block once per test binary: counts
 	// must sum, statements count once.

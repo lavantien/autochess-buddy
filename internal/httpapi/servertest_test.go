@@ -112,42 +112,62 @@ func (f editorFixture) post(t *testing.T, method, path, form string, hx bool) *h
 }
 
 // fakeAnalytics stands in for the duckdb engine in handler tests; its fields
-// feed the dashboard panel assertions.
+// feed the dashboard panel assertions. err, when set, makes every method fail
+// so the degraded dashboard arms run.
 type fakeAnalytics struct {
 	heroRows    []domain.HeroRow
 	placeRows   []domain.PlaceRow
 	viewCount   int
 	lastFilter  domain.Filter
 	filterCalls int
+	err         error
 }
 
 func (f *fakeAnalytics) HeroPerformance(ctx context.Context, fl domain.Filter) ([]domain.HeroRow, error) {
 	f.lastFilter = fl
 	f.filterCalls++
+	if f.err != nil {
+		return nil, f.err
+	}
 	return f.heroRows, nil
 }
 
 func (f *fakeAnalytics) SynergyPerformance(ctx context.Context, fl domain.Filter) ([]domain.SynergyRow, error) {
 	f.lastFilter = fl
+	if f.err != nil {
+		return nil, f.err
+	}
 	return nil, nil
 }
 
 func (f *fakeAnalytics) ItemPerformance(ctx context.Context, fl domain.Filter) ([]domain.ItemRow, error) {
 	f.lastFilter = fl
+	if f.err != nil {
+		return nil, f.err
+	}
 	return nil, nil
 }
 
 func (f *fakeAnalytics) RelicPerformance(ctx context.Context, fl domain.Filter) ([]domain.RelicRow, error) {
 	f.lastFilter = fl
+	if f.err != nil {
+		return nil, f.err
+	}
 	return nil, nil
 }
 
 func (f *fakeAnalytics) NetworthByPlacement(ctx context.Context, fl domain.Filter) ([]domain.PlaceRow, error) {
 	f.lastFilter = fl
+	if f.err != nil {
+		return nil, f.err
+	}
 	return f.placeRows, nil
 }
 
 func (f *fakeAnalytics) LineupsInView(ctx context.Context, fl domain.Filter) (int, error) {
 	f.lastFilter = fl
+	if f.err != nil {
+		return 0, f.err
+	}
 	return f.viewCount, nil
 }

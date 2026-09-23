@@ -8,6 +8,9 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/lavantien/autochess-buddy/internal/seed"
+	"github.com/lavantien/autochess-buddy/internal/store/sqlite"
 )
 
 func writeTemp(t *testing.T, body string) string {
@@ -98,5 +101,40 @@ func TestBootSeededApp_ServesDashboardAndDrains(t *testing.T) {
 	}
 	if err := stop(); err != nil {
 		t.Fatalf("stop: %v", err)
+	}
+}
+
+func TestBootSeededApp_BadDbPathFails(t *testing.T) {
+	lis, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("listen: %v", err)
+	}
+	defer func() { _ = lis.Close() }()
+	dbPath := filepath.Join(t.TempDir(), "missing", "app.db")
+	_, _, err = bootSeededApp(lis, dbPath)
+	if err == nil || !strings.Contains(err.Error(), "open sqlite") {
+		t.Fatalf("err = %v, want open sqlite failure", err)
+	}
+}
+
+func TestBootSeededApp_SecondSeedRefused(t *testing.T) {
+	dbPath := filepath.Join(t.TempDir(), "app.db")
+	st, err := sqlite.Open(dbPath)
+	if err != nil {
+		t.Fatalf("open: %v", err)
+	}
+	if err := seed.Load(st.DB); err != nil {
+		t.Fatalf("seed: %v", err)
+	}
+	if err := st.Close(); err != nil {
+		t.Fatalf("close: %v", err)
+	}
+	lis, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("listen: %v", err)
+	}
+	defer func() { _ = lis.Close() }()
+	if _, _, err := bootSeededApp(lis, dbPath); err == nil || !strings.Contains(err.Error(), "seed") {
+		t.Fatalf("err = %v, want seed refusal", err)
 	}
 }

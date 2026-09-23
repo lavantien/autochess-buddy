@@ -94,6 +94,24 @@ func TestBatchScanError(t *testing.T) {
 
 // Every Service wrapper must surface the batch error from an already-canceled
 // context instead of returning rows.
+func TestFiltersClauseNarrowQuery(t *testing.T) {
+	_, e := openAnalytics(t)
+	f := domain.Filter{PatchID: 1, Source: "pro"}
+	for _, tc := range []struct {
+		name string
+		call func() error
+	}{
+		{"heroes", func() error { _, err := e.HeroPerformance(context.Background(), f); return err }},
+		{"lineups in view", func() error { _, err := e.LineupsInView(context.Background(), f); return err }},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			if err := tc.call(); err != nil {
+				t.Fatalf("%s with patch+source filter: %v", tc.name, err)
+			}
+		})
+	}
+}
+
 func TestWrappersCanceledContext(t *testing.T) {
 	_, e := openAnalytics(t)
 	ctx, cancel := context.WithCancel(context.Background())

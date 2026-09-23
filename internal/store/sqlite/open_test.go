@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -47,6 +48,16 @@ func TestOpen_MigratesFreshFile(t *testing.T) {
 	}
 	if n != 1 {
 		t.Error("matches.finalized_at missing, deviation 1 not applied")
+	}
+}
+
+func TestOpen_GarbageFileFailsMigration(t *testing.T) {
+	p := filepath.Join(t.TempDir(), "app.db")
+	if err := os.WriteFile(p, []byte("definitely not a sqlite file"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := Open(p); err == nil {
+		t.Fatal("want migration error on a garbage file, got nil")
 	}
 }
 
