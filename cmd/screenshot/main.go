@@ -83,6 +83,12 @@ func shoot(out string) error {
 	return refreshReadme("readme.md", filepath.ToSlash(out))
 }
 
+// newShotServer matches the production server's header-read cap so a client
+// that opens a connection but never sends headers cannot pin a goroutine.
+func newShotServer(h http.Handler) *http.Server {
+	return &http.Server{Handler: h, ReadHeaderTimeout: 5 * time.Second}
+}
+
 // bootSeededApp opens sqlite plus duckdb over dbPath, seeds, and serves the
 // app on lis; stop drains the server, closes the engines, and removes the
 // scratch db.
@@ -102,7 +108,7 @@ func bootSeededApp(lis net.Listener, dbPath string) (base string, stop func() er
 		_ = os.Remove(dbPath)
 		return "", nil, fmt.Errorf("open duckdb: %w", err)
 	}
-	srv := &http.Server{Handler: httpapi.New(nil, st, service.EntryService{St: st}, eng)}
+	srv := newShotServer(httpapi.New(nil, st, service.EntryService{St: st}, eng))
 	go func() { _ = srv.Serve(lis) }()
 	return "http://" + lis.Addr().String(), func() error {
 		err := srv.Shutdown(context.Background())
