@@ -2,3 +2,4 @@ data/*.db-journal
 *.tgz
 node_modules/
 .superpowers/
+/autochess.exe
