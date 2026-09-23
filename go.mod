@@ -3,6 +3,7 @@ module github.com/lavantien/autochess-buddy
 go 1.27.0
 
 require (
+	github.com/duckdb/duckdb-go/v2 v2.10505.0
 	github.com/mattn/go-sqlite3 v1.14.52
 	github.com/pressly/goose/v3 v3.28.0
 	pgregory.net/rapid v1.3.0
@@ -21,7 +22,6 @@ require (
 	github.com/duckdb/duckdb-go-bindings/lib/linux-amd64 v0.10505.0 // indirect
 	github.com/duckdb/duckdb-go-bindings/lib/linux-arm64 v0.10505.0 // indirect
 	github.com/duckdb/duckdb-go-bindings/lib/windows-amd64 v0.10505.0 // indirect
-	github.com/duckdb/duckdb-go/v2 v2.10505.0 // indirect
 	github.com/fatih/color v1.16.0 // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/go-viper/mapstructure/v2 v2.5.0 // indirect
