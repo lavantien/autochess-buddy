@@ -90,23 +90,23 @@ func (s *Server) synergyCreate(w http.ResponseWriter, r *http.Request, entity st
 	name := f.str("name")
 	nameKey := entity + "-name"
 	if name == "" {
-		s.synergy422(w, r, nameKey, "name is required.", nil)
+		s.synergy422(w, r, entity, nameKey, "name is required.", nil)
 		return
 	}
 	if s.synergyNameTaken(r, entity, name, 0) {
-		s.synergy422(w, r, nameKey, "that name is taken.", map[string]string{nameKey: name})
+		s.synergy422(w, r, entity, nameKey, "that name is taken.", map[string]string{nameKey: name})
 		return
 	}
 	if entity == "races" {
 		if _, err := s.st.CreateRace(r.Context(), domain.Race{Name: name}, nil); err != nil {
-			s.mutationFallback(w, r, err)
+			s.mutationFallbackTo(w, r, err, "/"+entity)
 			return
 		}
 	} else if _, err := s.st.CreateClass(r.Context(), domain.Class{Name: name}, nil); err != nil {
-		s.mutationFallback(w, r, err)
+		s.mutationFallbackTo(w, r, err, "/"+entity)
 		return
 	}
-	http.Redirect(w, r, "/races", http.StatusSeeOther)
+	http.Redirect(w, r, "/"+entity, http.StatusSeeOther)
 }
 
 // synergyUpdate dispatches on mode: rename, add or replace one tier, or delete
@@ -121,14 +121,14 @@ func (s *Server) synergyUpdate(w http.ResponseWriter, r *http.Request, entity st
 	if entity == "races" {
 		rc, tiers, err := s.st.GetRace(r.Context(), id)
 		if err != nil {
-			http.Redirect(w, r, "/races", http.StatusSeeOther)
+			http.Redirect(w, r, "/"+entity, http.StatusSeeOther)
 			return
 		}
 		current, name = tiers, rc.Name
 	} else {
 		cl, tiers, err := s.st.GetClass(r.Context(), id)
 		if err != nil {
-			http.Redirect(w, r, "/races", http.StatusSeeOther)
+			http.Redirect(w, r, "/"+entity, http.StatusSeeOther)
 			return
 		}
 		current, name = tiers, cl.Name
@@ -137,18 +137,18 @@ func (s *Server) synergyUpdate(w http.ResponseWriter, r *http.Request, entity st
 	case "save_name":
 		typed := f.str("name")
 		if typed == "" {
-			s.synergy422(w, r, nameKey, "name is required.", nil)
+			s.synergy422(w, r, entity, nameKey, "name is required.", nil)
 			return
 		}
 		if s.synergyNameTaken(r, entity, typed, id) {
-			s.synergy422(w, r, nameKey, "that name is taken.", map[string]string{nameKey: typed})
+			s.synergy422(w, r, entity, nameKey, "that name is taken.", map[string]string{nameKey: typed})
 			return
 		}
 		name = typed
 	case "save_tier":
 		count := f.int("count")
 		if count < 1 {
-			s.synergy422(w, r, tierKey, name+" tier count must be at least 1.", map[string]string{
+			s.synergy422(w, r, entity, tierKey, name+" tier count must be at least 1.", map[string]string{
 				tierKey + "-count":  f.str("count"),
 				tierKey + "-effect": f.str("effect"),
 			})
@@ -174,7 +174,7 @@ func (s *Server) synergyUpdate(w http.ResponseWriter, r *http.Request, entity st
 		}
 		current = kept
 	default:
-		s.synergy422(w, r, tierKey, "unknown action.", nil)
+		s.synergy422(w, r, entity, tierKey, "unknown action.", nil)
 		return
 	}
 	var err error
@@ -184,23 +184,46 @@ func (s *Server) synergyUpdate(w http.ResponseWriter, r *http.Request, entity st
 		err = s.st.UpdateClass(r.Context(), domain.Class{ID: id, Name: name}, current)
 	}
 	if err != nil {
-		s.mutationFallback(w, r, err)
+		s.mutationFallbackTo(w, r, err, "/"+entity)
 		return
 	}
-	http.Redirect(w, r, "/races", http.StatusSeeOther)
+	http.Redirect(w, r, "/"+entity, http.StatusSeeOther)
+}
+
+// synergyDelete answers a race or class delete: a free row redirects back to
+// its tab, a row history still references answers 409 with the synergies page
+// and the conflict under its ladder.
+func (s *Server) synergyDelete(entity string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		id := pathID(r, "id")
+		s.codexDelete(w, r, entity, id, func() error {
+			races, err := s.ladderEntries(r, "races")
+			if err != nil {
+				return err
+			}
+			classes, err := s.ladderEntries(r, "classes")
+			if err != nil {
+				return err
+			}
+			st := ui.NewCodexForm()
+			st.Errs = append(st.Errs, domain.FieldError{Field: ui.LadderKey(entity, id, "name"), Msg: domain.ErrInUse.Error()})
+			renderPage(s.log, w, r, http.StatusConflict, ui.SynergiesPage(races, classes, st))
+			return nil
+		})
+	}
 }
 
 // synergy422 rerenders the synergies page with the error under its ladder and
 // the typed values preserved under the keys the template binds.
-func (s *Server) synergy422(w http.ResponseWriter, r *http.Request, field, msg string, values map[string]string) {
+func (s *Server) synergy422(w http.ResponseWriter, r *http.Request, entity, field, msg string, values map[string]string) {
 	races, err := s.ladderEntries(r, "races")
 	if err != nil {
-		s.mutationFallback(w, r, err)
+		s.mutationFallbackTo(w, r, err, "/"+entity)
 		return
 	}
 	classes, err := s.ladderEntries(r, "classes")
 	if err != nil {
-		s.mutationFallback(w, r, err)
+		s.mutationFallbackTo(w, r, err, "/"+entity)
 		return
 	}
 	st := ui.NewCodexForm()

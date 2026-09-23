@@ -53,12 +53,12 @@ func New(log *slog.Logger, st *sqlite.Store, entry service.EntryService, dash an
 	mux.HandleFunc("POST /races", func(w http.ResponseWriter, r *http.Request) { s.synergyCreate(w, r, "races") })
 	mux.HandleFunc("GET /races/{id}", toSynergies)
 	mux.HandleFunc("POST /races/{id}", func(w http.ResponseWriter, r *http.Request) { s.synergyUpdate(w, r, "races") })
-	mux.HandleFunc("DELETE /races/{id}", func(w http.ResponseWriter, r *http.Request) { s.codexDelete(w, r, "races", pathID(r, "id"), nil) })
+	mux.HandleFunc("DELETE /races/{id}", s.synergyDelete("races"))
 	mux.HandleFunc("GET /classes", s.synergyIndex)
 	mux.HandleFunc("POST /classes", func(w http.ResponseWriter, r *http.Request) { s.synergyCreate(w, r, "classes") })
 	mux.HandleFunc("GET /classes/{id}", toSynergies)
 	mux.HandleFunc("POST /classes/{id}", func(w http.ResponseWriter, r *http.Request) { s.synergyUpdate(w, r, "classes") })
-	mux.HandleFunc("DELETE /classes/{id}", func(w http.ResponseWriter, r *http.Request) { s.codexDelete(w, r, "classes", pathID(r, "id"), nil) })
+	mux.HandleFunc("DELETE /classes/{id}", s.synergyDelete("classes"))
 
 	mux.HandleFunc("GET /items", s.itemIndex)
 	mux.HandleFunc("POST /items", s.itemCreate)
@@ -115,6 +115,12 @@ func stubPage(log *slog.Logger, section, title, message string) http.HandlerFunc
 // gets sent back to the matches list, hx gets a bare 422 with no fragments. The
 // cause is logged so a failure never looks like quiet success.
 func (s *Server) mutationFallback(w http.ResponseWriter, r *http.Request, cause error) {
+	s.mutationFallbackTo(w, r, cause, "/matches")
+}
+
+// mutationFallbackTo is mutationFallback with the non-hx landing page chosen by
+// the caller, so a tab's own mutations fall back to their own tab.
+func (s *Server) mutationFallbackTo(w http.ResponseWriter, r *http.Request, cause error, target string) {
 	if cause != nil {
 		s.log.Warn("mutation fallback", "method", r.Method, "path", r.URL.Path, "err", cause)
 	}
@@ -122,7 +128,7 @@ func (s *Server) mutationFallback(w http.ResponseWriter, r *http.Request, cause 
 		w.WriteHeader(http.StatusUnprocessableEntity)
 		return
 	}
-	http.Redirect(w, r, "/matches", http.StatusSeeOther)
+	http.Redirect(w, r, target, http.StatusSeeOther)
 }
 
 // loadList fetches an option list for a rerender; a load failure logs and
