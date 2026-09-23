@@ -27,8 +27,10 @@ vet:
 test:
 	go test $(RUN) $(PKG)
 
+# coverpkg: every test binary reports all packages, so cross-package
+# execution counts (the badge parser dedups the repeated blocks)
 cover:
-	go test -coverprofile=coverage.out -covermode=atomic ./...
+	go test -coverprofile=coverage.out -covermode=atomic -coverpkg=./... ./...
 
 # badge: cover profile to shields json plus min coverage gate (ci publishes it)
 badge: cover

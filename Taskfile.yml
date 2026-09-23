@@ -29,9 +29,9 @@ tasks:
       - go test ./...
 
   cover:
-    desc: unit suite with coverage profile
+    desc: unit suite with coverage profile (repo-wide instrumentation)
     cmds:
-      - go test -coverprofile=coverage.out -covermode=atomic ./...
+      - go test -coverprofile=coverage.out -covermode=atomic -coverpkg=./... ./...
 
   badge:
     desc: cover profile to shields json plus min coverage gate (ci publishes it)

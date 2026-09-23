@@ -62,6 +62,47 @@ func TestParseProfileSkipsMatchedPaths(t *testing.T) {
 	}
 }
 
+func TestParseProfileDedupsDuplicateBlocks(t *testing.T) {
+	// -coverpkg profiles repeat each block once per test binary: counts
+	// must sum, statements count once.
+	profile := "mode: atomic\n" +
+		"a.go:1.1,2.2 5 1\n" +
+		"a.go:1.1,2.2 5 0\n" +
+		"b.go:1.1,2.2 3 0\n" +
+		"b.go:1.1,2.2 3 0\n" +
+		"c.go:1.1,2.2 2 4\n" +
+		"c.go:1.1,2.2 2 5\n"
+	covered, total, err := parseProfile(strings.NewReader(profile), nil)
+	if err != nil {
+		t.Fatalf("parseProfile: %v", err)
+	}
+	if covered != 7 || total != 10 {
+		t.Fatalf("covered=%d total=%d, want 7/10", covered, total)
+	}
+}
+
+func TestParseProfileRejectsMismatchedDuplicateStmts(t *testing.T) {
+	profile := "mode: atomic\na.go:1.1,2.2 5 1\na.go:1.1,2.2 6 0\n"
+	_, _, err := parseProfile(strings.NewReader(profile), nil)
+	if err == nil || !strings.Contains(err.Error(), "duplicate") {
+		t.Fatalf("want duplicate-block error, got %v", err)
+	}
+}
+
+func TestParseProfileSkipAppliesToAllDuplicates(t *testing.T) {
+	profile := "mode: atomic\n" +
+		"x_templ.go:1.1,2.2 10 0\n" +
+		"x_templ.go:1.1,2.2 10 1\n" +
+		"a.go:1.1,2.2 3 1\n"
+	covered, total, err := parseProfile(strings.NewReader(profile), []string{"_templ.go"})
+	if err != nil {
+		t.Fatalf("parseProfile: %v", err)
+	}
+	if covered != 3 || total != 3 {
+		t.Fatalf("covered=%d total=%d, want 3/3", covered, total)
+	}
+}
+
 func TestPctTenths(t *testing.T) {
 	for _, tc := range []struct{ covered, total, want int }{
 		{0, 0, 0},

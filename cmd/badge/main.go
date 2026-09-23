@@ -89,8 +89,13 @@ type badge struct {
 	Color         string `json:"color"`
 }
 
+// parseProfile reads a go cover profile. Under -coverpkg every test binary
+// repeats each block, so duplicate blocks (same position key) sum their
+// counts and count statements once; mismatched statement counts mean a
+// corrupt profile.
 func parseProfile(r io.Reader, skip []string) (covered, total int, err error) {
 	sc := bufio.NewScanner(r)
+	blocks := make(map[string]*coverBlock)
 	for n := 0; sc.Scan(); n++ {
 		line := strings.TrimSpace(sc.Text())
 		if line == "" || strings.HasPrefix(line, "mode:") {
@@ -111,13 +116,28 @@ func parseProfile(r io.Reader, skip []string) (covered, total int, err error) {
 		if err != nil {
 			return 0, 0, fmt.Errorf("profile line %d: count: %w", n+1, err)
 		}
-		total += stmts
-		if count > 0 {
-			covered += stmts
+		if b, ok := blocks[fields[0]]; ok {
+			if b.stmts != stmts {
+				return 0, 0, fmt.Errorf("profile line %d: duplicate block %s with %d statements, want %d", n+1, fields[0], stmts, b.stmts)
+			}
+			b.count += count
+			continue
+		}
+		blocks[fields[0]] = &coverBlock{stmts: stmts, count: count}
+	}
+	if err := sc.Err(); err != nil {
+		return 0, 0, err
+	}
+	for _, b := range blocks {
+		total += b.stmts
+		if b.count > 0 {
+			covered += b.stmts
 		}
 	}
-	return covered, total, sc.Err()
+	return covered, total, nil
 }
+
+type coverBlock struct{ stmts, count int }
 
 func skipPath(path string, skip []string) bool {
 	for _, s := range skip {
