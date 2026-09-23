@@ -6,7 +6,7 @@ BINARY := autochess.exe
 PKG ?= ./...
 RUN ?=
 
-.PHONY: build gen fmt lint vet test e2e playwright seed serve uiwatch dev check
+.PHONY: build gen fmt lint vet test e2e playwright seed serve uiwatch dev shot check
 
 build:
 	go build -o $(BINARY) ./cmd/autochess
@@ -35,6 +35,10 @@ playwright:
 
 seed:
 	go run ./cmd/autochess -seed
+
+# release gate: refreshes docs/screenshots + the readme shot block
+shot:
+	go run ./cmd/screenshot
 
 serve:
 	go run ./cmd/autochess

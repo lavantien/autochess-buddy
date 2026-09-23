@@ -1,5 +1,9 @@
 # autochess companion
 
+<!-- ac-shot:start -->
+![dashboard](docs/screenshots/dashboard.png)
+<!-- ac-shot:end -->
+
 ## tech stack
 
 - sqlite for transactional queries
