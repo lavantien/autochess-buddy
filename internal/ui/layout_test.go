@@ -33,15 +33,7 @@ func TestBaseLayout_Golden(t *testing.T) {
 		`<a class="tab" href="/patches">patches</a>` +
 		`<a class="tab" href="/pros">pros</a></nav>` +
 		`<p>probe</p></main>` +
-		`<script>` +
-		"\n\t\t\t\t// The one sanctioned wiring beyond declarative attributes: focus lands on\n" +
-		"\t\t\t\t// the autofocused field after a swap, else on the neighbor a delete captured.\n" +
-		"\t\t\t\tdocument.addEventListener('htmx:after:swap', function () {\n" +
-		"\t\t\t\t\tvar a = document.querySelector('[data-autofocus]');\n" +
-		"\t\t\t\t\tif (a) { a.focus(); return; }\n" +
-		"\t\t\t\t\tif (window.__acNext) { window.__acNext.focus(); window.__acNext = null; }\n" +
-		"\t\t\t\t});\n" +
-		"\t\t\t</script></body></html>"
+		`<script src="/static/focus.js" defer></script></body></html>`
 	if got != want {
 		t.Fatalf("base layout golden mismatch\n got: %q\nwant: %q", got, want)
 	}
