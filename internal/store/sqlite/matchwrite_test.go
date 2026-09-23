@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/lavantien/autochess-buddy/internal/domain"
+	sqlite3 "github.com/mattn/go-sqlite3"
 )
 
 func TestAddLineup_PartialFailureRollsBackAll(t *testing.T) {
@@ -170,6 +171,11 @@ func TestFinalizeMatch_SetsFinalizedAt(t *testing.T) {
 	ctx := context.Background()
 	s := seedTemp(t)
 
+	for p := 4; p <= 8; p++ {
+		if _, err := s.AddLineup(ctx, domain.AddLineupCmd{MatchID: 6, Label: "fill", Placement: p}); err != nil {
+			t.Fatalf("fill placement %d: %v", p, err)
+		}
+	}
 	if err := s.FinalizeMatch(ctx, 6); err != nil {
 		t.Fatalf("finalize: %v", err)
 	}
@@ -182,5 +188,124 @@ func TestFinalizeMatch_SetsFinalizedAt(t *testing.T) {
 	}
 	if err := s.FinalizeMatch(ctx, 99); !errors.Is(err, domain.ErrNotFound) {
 		t.Fatalf("missing match err = %v, want ErrNotFound", err)
+	}
+}
+
+func TestFinalizedMatch_RejectsAllEdits(t *testing.T) {
+	ctx := context.Background()
+	s := seedTemp(t)
+
+	// Match 1 ships finalized with full boards; take one lineup and one slot.
+	var lineupID, slotID int64
+	if err := s.DB.QueryRowContext(ctx,
+		`SELECT id FROM lineups WHERE match_id = 1 ORDER BY id LIMIT 1`).Scan(&lineupID); err != nil {
+		t.Fatalf("lineup: %v", err)
+	}
+	if err := s.DB.QueryRowContext(ctx,
+		`SELECT ls.id FROM lineup_slots ls JOIN lineups l ON l.id = ls.lineup_id
+		 WHERE l.match_id = 1 ORDER BY ls.id LIMIT 1`).Scan(&slotID); err != nil {
+		t.Fatalf("slot: %v", err)
+	}
+	cases := []struct {
+		name string
+		call func() error
+	}{
+		{"add lineup", func() error { _, err := s.AddLineup(ctx, domain.AddLineupCmd{MatchID: 1, Placement: 3}); return err }},
+		{"copy lineup", func() error { _, err := s.CopyLineup(ctx, lineupID); return err }},
+		{"update lineup", func() error { return s.UpdateLineup(ctx, domain.Lineup{ID: lineupID, Placement: 3}) }},
+		{"delete lineup", func() error { return s.DeleteLineup(ctx, lineupID) }},
+		{"add slot", func() error { _, err := s.AddSlot(ctx, lineupID, 1, 2); return err }},
+		{"set slot stars", func() error { return s.SetSlotStars(ctx, slotID, 3) }},
+		{"delete slot", func() error { return s.DeleteSlot(ctx, slotID) }},
+		{"add slot item", func() error { return s.AddSlotItem(ctx, slotID, 1) }},
+		{"remove slot item", func() error { return s.RemoveSlotItem(ctx, slotID, 1) }},
+		{"add lineup relic", func() error { return s.AddLineupRelic(ctx, lineupID, 1) }},
+		{"remove lineup relic", func() error { return s.RemoveLineupRelic(ctx, lineupID, 1) }},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if err := tc.call(); !errors.Is(err, domain.ErrFinalized) {
+				t.Fatalf("err = %v, want ErrFinalized", err)
+			}
+		})
+	}
+}
+
+func TestFinalizeMatch_ValidatesInsideTxAndStampsOnce(t *testing.T) {
+	ctx := context.Background()
+	s := seedTemp(t)
+
+	// The draft (match 6) holds 3 lineups: the refusal must come from inside
+	// the stamping tx and leave finalized_at untouched.
+	if err := s.FinalizeMatch(ctx, 6); !errors.Is(err, domain.ErrProFinalize) {
+		t.Fatalf("draft finalize err = %v, want ErrProFinalize", err)
+	}
+	var fin int64
+	if err := s.DB.QueryRowContext(ctx,
+		`SELECT finalized_at FROM matches WHERE id = 6`).Scan(&fin); err != nil || fin != 0 {
+		t.Fatalf("refused finalize stamped anyway: %d err %v", fin, err)
+	}
+
+	// A me match with two lineups refuses too, even though drafts may rest at
+	// any count.
+	mid, err := s.CreateMatchShell(ctx, domain.Match{PatchID: 1, PlayedAt: 1, Source: "me"})
+	if err != nil {
+		t.Fatalf("me shell: %v", err)
+	}
+	for p := 1; p <= 2; p++ {
+		if _, err := s.AddLineup(ctx, domain.AddLineupCmd{MatchID: mid, Placement: p}); err != nil {
+			t.Fatalf("me lineup %d: %v", p, err)
+		}
+	}
+	if err := s.FinalizeMatch(ctx, mid); !errors.Is(err, domain.ErrMeFinalize) {
+		t.Fatalf("me finalize err = %v, want ErrMeFinalize", err)
+	}
+
+	// Fill the pro draft to 8 and finalize; a second finalize is idempotent.
+	for p := 4; p <= 8; p++ {
+		if _, err := s.AddLineup(ctx, domain.AddLineupCmd{MatchID: 6, Label: "fill", Placement: p}); err != nil {
+			t.Fatalf("fill placement %d: %v", p, err)
+		}
+	}
+	if err := s.FinalizeMatch(ctx, 6); err != nil {
+		t.Fatalf("finalize: %v", err)
+	}
+	// Pin the stamp, then prove a second call cannot move it.
+	if _, err := s.DB.ExecContext(ctx, `UPDATE matches SET finalized_at = 12345 WHERE id = 6`); err != nil {
+		t.Fatalf("pin stamp: %v", err)
+	}
+	if err := s.FinalizeMatch(ctx, 6); err != nil {
+		t.Fatalf("second finalize: %v", err)
+	}
+	if err := s.DB.QueryRowContext(ctx,
+		`SELECT finalized_at FROM matches WHERE id = 6`).Scan(&fin); err != nil || fin != 12345 {
+		t.Fatalf("re-stamp moved the marker: %d err %v, want 12345", fin, err)
+	}
+}
+
+func TestAddLineup_DuplicateSlotIndexesRefusedBeforeInsert(t *testing.T) {
+	ctx := context.Background()
+	s := seedTemp(t)
+
+	_, err := s.AddLineup(ctx, domain.AddLineupCmd{
+		MatchID: 6, Placement: 4,
+		Slots: []domain.Slot{
+			{SlotIndex: 2, Hero: domain.Hero{ID: 1}, Stars: 1},
+			{SlotIndex: 2, Hero: domain.Hero{ID: 2}, Stars: 1},
+		},
+	})
+	if !errors.Is(err, domain.ErrSlotTaken) {
+		t.Fatalf("duplicate slot index err = %v, want ErrSlotTaken", err)
+	}
+}
+
+func TestMapSlotTaken_UniqueMapsToFriendlyCopy(t *testing.T) {
+	got := mapSlotTaken(sqlite3.Error{Code: sqlite3.ErrConstraint, ExtendedCode: sqlite3.ErrConstraintUnique})
+	if !errors.Is(got, domain.ErrSlotTaken) {
+		t.Fatalf("unique err mapped to %v, want ErrSlotTaken", got)
+	}
+	other := errors.New("boom")
+	if got := mapSlotTaken(other); got != other {
+		t.Fatalf("non-unique err must pass through, got %v", got)
 	}
 }

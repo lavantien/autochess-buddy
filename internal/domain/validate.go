@@ -18,6 +18,11 @@ var (
 	// Copy for the me case is not in the spec, mirror of the pro wording, flagged in the stage report.
 	ErrMeFinalize  = errors.New("my matches need exactly 1 lineup before they can be finalized.")                      //nolint:staticcheck // user-facing copy
 	ErrProFinalize = errors.New("a pro match needs 8 lineups with placements 1 through 8 before it can be finalized.") //nolint:staticcheck // spec copy, verbatim
+
+	// finalize locks counts and placements (readme route table): once stamped,
+	// no write path may touch the match's boards again.
+	ErrFinalized = errors.New("this match is finalized and can no longer be edited.") //nolint:staticcheck // spec voice
+	ErrSlotTaken = errors.New("that cell was just filled. add the hero again.")       //nolint:staticcheck // spec voice
 )
 
 // PlacementConflictError reports a UNIQUE(match_id, placement) hit, the store maps the

@@ -23,6 +23,54 @@ func mapPlacement(err error, placement int) error {
 	return err
 }
 
+// mapSlotTaken folds the lineup_slots UNIQUE(lineup_id, slot_index) hit onto
+// friendly copy; it fires only when two adds race for the same board cell.
+func mapSlotTaken(err error) error {
+	var se sqlite3.Error
+	if errors.As(err, &se) && se.ExtendedCode == sqlite3.ErrConstraintUnique {
+		return domain.ErrSlotTaken
+	}
+	return err
+}
+
+// The writable guards refuse writes once a match is finalized: finalize locks
+// counts and placements (readme route table), and every mutation path funnels
+// through one of them inside its own tx.
+
+func matchWritable(ctx context.Context, tx *sql.Tx, matchID int64) error {
+	return finalizedAt(ctx, tx, `SELECT finalized_at FROM matches WHERE id = ?`, matchID)
+}
+
+func lineupWritable(ctx context.Context, tx *sql.Tx, lineupID int64) error {
+	return finalizedAt(ctx, tx, `
+		SELECT m.finalized_at FROM matches m
+		JOIN lineups l ON l.match_id = m.id
+		WHERE l.id = ?`, lineupID)
+}
+
+func slotWritable(ctx context.Context, tx *sql.Tx, slotID int64) error {
+	return finalizedAt(ctx, tx, `
+		SELECT m.finalized_at FROM matches m
+		JOIN lineups l ON l.match_id = m.id
+		JOIN lineup_slots s ON s.lineup_id = l.id
+		WHERE s.id = ?`, slotID)
+}
+
+func finalizedAt(ctx context.Context, tx *sql.Tx, query string, id int64) error {
+	var fin int64
+	err := tx.QueryRowContext(ctx, query, id).Scan(&fin)
+	if errors.Is(err, sql.ErrNoRows) {
+		return domain.ErrNotFound
+	}
+	if err != nil {
+		return err
+	}
+	if fin > 0 {
+		return domain.ErrFinalized
+	}
+	return nil
+}
+
 // CreateMatchShell inserts one draft match row and returns its id.
 func (s *Store) CreateMatchShell(ctx context.Context, m domain.Match) (int64, error) {
 	var id int64
@@ -44,6 +92,16 @@ func (s *Store) CreateMatchShell(ctx context.Context, m domain.Match) (int64, er
 func (s *Store) AddLineup(ctx context.Context, cmd domain.AddLineupCmd) (int64, error) {
 	var id int64
 	err := s.WithTx(ctx, func(tx *sql.Tx) error {
+		if err := matchWritable(ctx, tx, cmd.MatchID); err != nil {
+			return err
+		}
+		seen := make(map[int]bool, len(cmd.Slots))
+		for _, sl := range cmd.Slots {
+			if seen[sl.SlotIndex] {
+				return domain.ErrSlotTaken
+			}
+			seen[sl.SlotIndex] = true
+		}
 		res, err := tx.ExecContext(ctx,
 			`INSERT INTO lineups (match_id, pro_id, label, placement, wins, draws, losses, networth, created_at)
 			 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -100,6 +158,9 @@ func (s *Store) CopyLineup(ctx context.Context, lineupID int64) (int64, error) {
 			return domain.ErrNotFound
 		}
 		if err != nil {
+			return err
+		}
+		if err := matchWritable(ctx, tx, matchID); err != nil {
 			return err
 		}
 		var existing []domain.Lineup
@@ -184,6 +245,9 @@ func (s *Store) CopyLineup(ctx context.Context, lineupID int64) (int64, error) {
 // UpdateLineup rewrites one lineup's editable fields.
 func (s *Store) UpdateLineup(ctx context.Context, l domain.Lineup) error {
 	return mapPlacement(s.WithTx(ctx, func(tx *sql.Tx) error {
+		if err := lineupWritable(ctx, tx, l.ID); err != nil {
+			return err
+		}
 		res, err := tx.ExecContext(ctx,
 			`UPDATE lineups SET pro_id = ?, label = ?, placement = ?, wins = ?, draws = ?, losses = ?, networth = ?
 			 WHERE id = ?`, l.ProID, l.Label, l.Placement, l.Wins, l.Draws, l.Losses, l.Networth, l.ID)
@@ -197,6 +261,9 @@ func (s *Store) UpdateLineup(ctx context.Context, l domain.Lineup) error {
 // DeleteLineup removes one lineup; slots, items and relics cascade.
 func (s *Store) DeleteLineup(ctx context.Context, id int64) error {
 	return s.WithTx(ctx, func(tx *sql.Tx) error {
+		if err := lineupWritable(ctx, tx, id); err != nil {
+			return err
+		}
 		res, err := tx.ExecContext(ctx, `DELETE FROM lineups WHERE id = ?`, id)
 		if err != nil {
 			return err
@@ -209,6 +276,9 @@ func (s *Store) DeleteLineup(ctx context.Context, id int64) error {
 func (s *Store) AddSlot(ctx context.Context, lineupID, heroID int64, stars int) (int64, error) {
 	var id int64
 	err := s.WithTx(ctx, func(tx *sql.Tx) error {
+		if err := lineupWritable(ctx, tx, lineupID); err != nil {
+			return err
+		}
 		rows, err := tx.QueryContext(ctx,
 			`SELECT slot_index FROM lineup_slots WHERE lineup_id = ?`, lineupID)
 		if err != nil {
@@ -236,12 +306,15 @@ func (s *Store) AddSlot(ctx context.Context, lineupID, heroID int64, stars int) 
 		id, err = res.LastInsertId()
 		return err
 	})
-	return id, mapConstraint(err)
+	return id, mapSlotTaken(mapConstraint(err))
 }
 
 // SetSlotStars rewrites one slot's star count.
 func (s *Store) SetSlotStars(ctx context.Context, slotID int64, stars int) error {
 	return s.WithTx(ctx, func(tx *sql.Tx) error {
+		if err := slotWritable(ctx, tx, slotID); err != nil {
+			return err
+		}
 		res, err := tx.ExecContext(ctx, `UPDATE lineup_slots SET stars = ? WHERE id = ?`, stars, slotID)
 		if err != nil {
 			return err
@@ -253,6 +326,9 @@ func (s *Store) SetSlotStars(ctx context.Context, slotID int64, stars int) error
 // DeleteSlot removes one board cell; its items cascade.
 func (s *Store) DeleteSlot(ctx context.Context, slotID int64) error {
 	return s.WithTx(ctx, func(tx *sql.Tx) error {
+		if err := slotWritable(ctx, tx, slotID); err != nil {
+			return err
+		}
 		res, err := tx.ExecContext(ctx, `DELETE FROM lineup_slots WHERE id = ?`, slotID)
 		if err != nil {
 			return err
@@ -264,6 +340,9 @@ func (s *Store) DeleteSlot(ctx context.Context, slotID int64) error {
 // AddSlotItem attaches one item to one slot.
 func (s *Store) AddSlotItem(ctx context.Context, slotID, itemID int64) error {
 	return mapConstraint(s.WithTx(ctx, func(tx *sql.Tx) error {
+		if err := slotWritable(ctx, tx, slotID); err != nil {
+			return err
+		}
 		_, err := tx.ExecContext(ctx, `INSERT INTO slot_items (slot_id, item_id) VALUES (?, ?)`, slotID, itemID)
 		return err
 	}))
@@ -272,6 +351,9 @@ func (s *Store) AddSlotItem(ctx context.Context, slotID, itemID int64) error {
 // RemoveSlotItem detaches one item from one slot.
 func (s *Store) RemoveSlotItem(ctx context.Context, slotID, itemID int64) error {
 	return s.WithTx(ctx, func(tx *sql.Tx) error {
+		if err := slotWritable(ctx, tx, slotID); err != nil {
+			return err
+		}
 		res, err := tx.ExecContext(ctx, `DELETE FROM slot_items WHERE slot_id = ? AND item_id = ?`, slotID, itemID)
 		if err != nil {
 			return err
@@ -283,6 +365,9 @@ func (s *Store) RemoveSlotItem(ctx context.Context, slotID, itemID int64) error 
 // AddLineupRelic attaches one relic to one lineup.
 func (s *Store) AddLineupRelic(ctx context.Context, lineupID, relicID int64) error {
 	return mapConstraint(s.WithTx(ctx, func(tx *sql.Tx) error {
+		if err := lineupWritable(ctx, tx, lineupID); err != nil {
+			return err
+		}
 		_, err := tx.ExecContext(ctx, `INSERT INTO lineup_relics (lineup_id, relic_id) VALUES (?, ?)`, lineupID, relicID)
 		return err
 	}))
@@ -291,6 +376,9 @@ func (s *Store) AddLineupRelic(ctx context.Context, lineupID, relicID int64) err
 // RemoveLineupRelic detaches one relic from one lineup.
 func (s *Store) RemoveLineupRelic(ctx context.Context, lineupID, relicID int64) error {
 	return s.WithTx(ctx, func(tx *sql.Tx) error {
+		if err := lineupWritable(ctx, tx, lineupID); err != nil {
+			return err
+		}
 		res, err := tx.ExecContext(ctx, `DELETE FROM lineup_relics WHERE lineup_id = ? AND relic_id = ?`, lineupID, relicID)
 		if err != nil {
 			return err
@@ -299,15 +387,47 @@ func (s *Store) RemoveLineupRelic(ctx context.Context, lineupID, relicID int64) 
 	})
 }
 
-// FinalizeMatch stamps the finalize marker. Lineup-count rules live in the service
-// layer via domain.ValidateFinalize.
+// FinalizeMatch validates the source lineup rules and stamps the marker in one
+// tx, so no lineup add can slip between validation and the stamp. A repeat
+// finalize is idempotent and never moves the marker.
 func (s *Store) FinalizeMatch(ctx context.Context, id int64) error {
 	return s.WithTx(ctx, func(tx *sql.Tx) error {
-		res, err := tx.ExecContext(ctx, `UPDATE matches SET finalized_at = ? WHERE id = ?`, now(), id)
+		var source string
+		var fin int64
+		err := tx.QueryRowContext(ctx,
+			`SELECT source, finalized_at FROM matches WHERE id = ?`, id).Scan(&source, &fin)
+		if errors.Is(err, sql.ErrNoRows) {
+			return domain.ErrNotFound
+		}
 		if err != nil {
 			return err
 		}
-		return affected(res, "match")
+		if fin > 0 {
+			return nil
+		}
+		var lineups []domain.Lineup
+		rows, err := tx.QueryContext(ctx, `SELECT placement FROM lineups WHERE match_id = ?`, id)
+		if err != nil {
+			return err
+		}
+		for rows.Next() {
+			var l domain.Lineup
+			if err := rows.Scan(&l.Placement); err != nil {
+				_ = rows.Close()
+				return err
+			}
+			lineups = append(lineups, l)
+		}
+		if err := rows.Err(); err != nil {
+			_ = rows.Close()
+			return err
+		}
+		if err := domain.ValidateFinalize(domain.Match{Source: source}, lineups); err != nil {
+			return err
+		}
+		_, err = tx.ExecContext(ctx,
+			`UPDATE matches SET finalized_at = ? WHERE id = ? AND finalized_at = 0`, now(), id)
+		return err
 	})
 }
 

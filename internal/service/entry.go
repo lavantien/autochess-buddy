@@ -144,15 +144,10 @@ func (s EntryService) copyLineup(ctx context.Context, matchID, lineupID int64) (
 	return 0, domain.ErrNotFound
 }
 
-// FinalizeMatch validates the lineup rules then stamps the marker.
+// FinalizeMatch delegates to the store: validation and the stamp share one tx
+// there, closing the window where a concurrent lineup add could land between
+// the rule check and the marker.
 func (s EntryService) FinalizeMatch(ctx context.Context, id int64) error {
-	m, lineups, err := s.St.GetMatch(ctx, id)
-	if err != nil {
-		return err
-	}
-	if err := domain.ValidateFinalize(m, lineups); err != nil {
-		return err
-	}
 	return s.St.FinalizeMatch(ctx, id)
 }
 
