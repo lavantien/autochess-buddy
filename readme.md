@@ -231,7 +231,7 @@ net/http with go 1.27 method patterns, html only. hx-request header present mean
 
 #### layer 5: ui
 
-templ base layout, page templates, small components in internal/ui. htmx 4.0.0 vendored as a static file since npm latest still points at 2.x. one hand written dark stylesheet, tables and forms only. lineup entry is incremental: each lineup card is its own small form so placement conflicts surface per card through the unique constraint and no 100-field atomic submit exists, a duplicate-lineup button copies the previous card since adjacent placements share most pieces, match lists show n/8 so partial entry is a resting state, stars default to 2. hero picker is a select with datalist search, no per-keystroke server calls, no client js beyond htmx. deletes use hx-delete with hx-confirm.
+templ base layout, page templates, small components in internal/ui. htmx 4.0.0 vendored as a static file since npm latest still points at 2.x. one hand written dark stylesheet, tables and forms only. full frontend spec with tokens, wireframes, and the htmx swap map: frontend-design.md. lineup entry is incremental: each lineup card is its own small form so placement conflicts surface per card through the unique constraint and no 100-field atomic submit exists, a duplicate-lineup button copies the previous card since adjacent placements share most pieces, match lists show n/8 so partial entry is a resting state, stars default to 2. hero picker is a select with datalist search, no per-keystroke server calls, no client js beyond htmx. deletes use hx-delete with hx-confirm.
 
 #### layer 6: analytics
 
