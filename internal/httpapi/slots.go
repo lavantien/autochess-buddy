@@ -1,6 +1,7 @@
 package httpapi
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/lavantien/autochess-buddy/internal/domain"
@@ -15,12 +16,12 @@ func (s *Server) addSlot(w http.ResponseWriter, r *http.Request) {
 	f := parseForm(r)
 	view, err := s.entry.Editor(r.Context(), f.int64("match_id"))
 	if err != nil {
-		s.mutationFallback(w, r)
+		s.mutationFallback(w, r, err)
 		return
 	}
 	l := lineupByID(view, lid)
 	if l == nil {
-		s.mutationFallback(w, r)
+		s.mutationFallback(w, r, fmt.Errorf("lineup %d not in view", lid))
 		return
 	}
 	name := f.str("hero")
@@ -58,7 +59,7 @@ func (s *Server) addSlot(w http.ResponseWriter, r *http.Request) {
 	}
 	fresh, err := s.entry.Editor(r.Context(), view.Match.ID)
 	if err != nil {
-		s.mutationFallback(w, r)
+		s.mutationFallback(w, r, err)
 		return
 	}
 	if fl := lineupByID(fresh, lid); fl != nil {
@@ -67,7 +68,7 @@ func (s *Server) addSlot(w http.ResponseWriter, r *http.Request) {
 			ui.HeroForm(fresh, *fl, ui.HeroFormState{Reset: true}, true))
 		return
 	}
-	s.mutationFallback(w, r)
+	s.mutationFallback(w, r, err)
 }
 
 // saveStars rewrites one slot's stars; the response redraws the grid.
@@ -84,10 +85,10 @@ func (s *Server) saveStars(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := s.st.SetSlotStars(r.Context(), sid, stars); err != nil {
-		s.mutationFallback(w, r)
+		s.mutationFallback(w, r, err)
 		return
 	}
-	s.gridOK(w, r, view.Match.ID, l.ID, ui.SlotFormState{})
+	s.gridOK(w, r, view.Match.ID, l.ID, ui.SlotFormState{OpenSlotID: sid, FocusSlotID: sid, FocusField: "details"})
 }
 
 // attachItem adds an item to a slot; the response redraws the grid with that
@@ -116,7 +117,7 @@ func (s *Server) attachItem(w http.ResponseWriter, r *http.Request) {
 		s.gridError(w, r, view, l, sid, "item", "pick an item from the list.")
 		return
 	}
-	s.gridOK(w, r, view.Match.ID, l.ID, ui.SlotFormState{OpenSlotID: sid})
+	s.gridOK(w, r, view.Match.ID, l.ID, ui.SlotFormState{OpenSlotID: sid, FocusSlotID: sid, FocusField: "item"})
 }
 
 // removeItem detaches one item; the response redraws the grid with the slot's
@@ -130,10 +131,10 @@ func (s *Server) removeItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := s.st.RemoveSlotItem(r.Context(), sid, itemID); err != nil {
-		s.mutationFallback(w, r)
+		s.mutationFallback(w, r, err)
 		return
 	}
-	s.gridOK(w, r, view.Match.ID, l.ID, ui.SlotFormState{OpenSlotID: sid})
+	s.gridOK(w, r, view.Match.ID, l.ID, ui.SlotFormState{OpenSlotID: sid, FocusSlotID: sid, FocusField: "details"})
 }
 
 // deleteSlot removes a board cell; the response redraws the grid.
@@ -145,7 +146,7 @@ func (s *Server) deleteSlot(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := s.st.DeleteSlot(r.Context(), sid); err != nil {
-		s.mutationFallback(w, r)
+		s.mutationFallback(w, r, err)
 		return
 	}
 	s.gridOK(w, r, view.Match.ID, l.ID, ui.SlotFormState{})
@@ -157,12 +158,12 @@ func (s *Server) addRelic(w http.ResponseWriter, r *http.Request) {
 	f := parseForm(r)
 	view, err := s.entry.Editor(r.Context(), f.int64("match_id"))
 	if err != nil {
-		s.mutationFallback(w, r)
+		s.mutationFallback(w, r, err)
 		return
 	}
 	l := lineupByID(view, lid)
 	if l == nil {
-		s.mutationFallback(w, r)
+		s.mutationFallback(w, r, fmt.Errorf("lineup %d not in view", lid))
 		return
 	}
 	if err := s.st.AddLineupRelic(r.Context(), lid, f.int64("relic")); err != nil {
@@ -175,14 +176,14 @@ func (s *Server) addRelic(w http.ResponseWriter, r *http.Request) {
 	}
 	fresh, err := s.entry.Editor(r.Context(), view.Match.ID)
 	if err != nil {
-		s.mutationFallback(w, r)
+		s.mutationFallback(w, r, err)
 		return
 	}
 	if fl := lineupByID(fresh, lid); fl != nil {
-		renderOOB(s.log, w, r, http.StatusOK, ui.RelicsRegion(fresh, *fl, ui.RelicState{Open: true}, true))
+		renderOOB(s.log, w, r, http.StatusOK, ui.RelicsRegion(fresh, *fl, ui.RelicState{Open: true, Focus: true}, true))
 		return
 	}
-	s.mutationFallback(w, r)
+	s.mutationFallback(w, r, fmt.Errorf("lineup %d vanished", lid))
 }
 
 // removeRelic detaches one relic; the response redraws the relics row with the
@@ -193,16 +194,16 @@ func (s *Server) removeRelic(w http.ResponseWriter, r *http.Request) {
 	f := parseForm(r)
 	view, err := s.entry.Editor(r.Context(), f.int64("match_id"))
 	if err != nil {
-		s.mutationFallback(w, r)
+		s.mutationFallback(w, r, err)
 		return
 	}
 	l := lineupByID(view, lid)
 	if l == nil {
-		s.mutationFallback(w, r)
+		s.mutationFallback(w, r, fmt.Errorf("lineup %d not in view", lid))
 		return
 	}
 	if err := s.st.RemoveLineupRelic(r.Context(), lid, relicID); err != nil {
-		s.mutationFallback(w, r)
+		s.mutationFallback(w, r, err)
 		return
 	}
 	if !isHX(r) {
@@ -211,14 +212,14 @@ func (s *Server) removeRelic(w http.ResponseWriter, r *http.Request) {
 	}
 	fresh, err := s.entry.Editor(r.Context(), view.Match.ID)
 	if err != nil {
-		s.mutationFallback(w, r)
+		s.mutationFallback(w, r, err)
 		return
 	}
 	if fl := lineupByID(fresh, lid); fl != nil {
-		renderOOB(s.log, w, r, http.StatusOK, ui.RelicsRegion(fresh, *fl, ui.RelicState{Open: true}, true))
+		renderOOB(s.log, w, r, http.StatusOK, ui.RelicsRegion(fresh, *fl, ui.RelicState{Open: true, FocusSummary: true}, true))
 		return
 	}
-	s.mutationFallback(w, r)
+	s.mutationFallback(w, r, fmt.Errorf("lineup %d vanished", lid))
 }
 
 // viewForSlot loads the editor view and the lineup owning the slot, answering the
@@ -226,7 +227,7 @@ func (s *Server) removeRelic(w http.ResponseWriter, r *http.Request) {
 func (s *Server) viewForSlot(w http.ResponseWriter, r *http.Request, matchID, slotID int64) (service.EditorView, *domain.Lineup) {
 	view, err := s.entry.Editor(r.Context(), matchID)
 	if err != nil {
-		s.mutationFallback(w, r)
+		s.mutationFallback(w, r, err)
 		return view, nil
 	}
 	for i := range view.Lineups {
@@ -236,7 +237,7 @@ func (s *Server) viewForSlot(w http.ResponseWriter, r *http.Request, matchID, sl
 			}
 		}
 	}
-	s.mutationFallback(w, r)
+	s.mutationFallback(w, r, fmt.Errorf("slot %d not in match %d", slotID, matchID))
 	return view, nil
 }
 
@@ -247,14 +248,14 @@ func (s *Server) gridOK(w http.ResponseWriter, r *http.Request, matchID, lineupI
 	}
 	fresh, err := s.entry.Editor(r.Context(), matchID)
 	if err != nil {
-		s.mutationFallback(w, r)
+		s.mutationFallback(w, r, err)
 		return
 	}
 	if fl := lineupByID(fresh, lineupID); fl != nil {
 		renderOOB(s.log, w, r, http.StatusOK, ui.GridRegion(fresh, *fl, st, true))
 		return
 	}
-	s.mutationFallback(w, r)
+	s.mutationFallback(w, r, err)
 }
 
 func (s *Server) gridError(w http.ResponseWriter, r *http.Request, view service.EditorView, l *domain.Lineup, slotID int64, field, msg string) {

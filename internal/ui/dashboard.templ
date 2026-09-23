@@ -18,6 +18,7 @@ templ dashBody(view string, patches []domain.Patch, patchVersion string, f analy
 				<select name="patch"
 					hx-get={ "/dashboard/" + view }
 					hx-target={ "#dashpanel-" + view }
+					hx-swap="outerHTML"
 					hx-include="closest form"
 					hx-push-url="true"
 					hx-sync="this:abort"
@@ -34,6 +35,7 @@ templ dashBody(view string, patches []domain.Patch, patchVersion string, f analy
 				<select name="source"
 					hx-get={ "/dashboard/" + view }
 					hx-target={ "#dashpanel-" + view }
+					hx-swap="outerHTML"
 					hx-include="closest form"
 					hx-push-url="true"
 					hx-sync="this:abort"

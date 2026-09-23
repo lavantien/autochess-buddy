@@ -2,6 +2,7 @@ package httpapi
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -38,8 +39,8 @@ func resetEditState(l *domain.Lineup) ui.EditFormState {
 
 // cardFragment renders one lineup card in its resting state, for swaps that
 // replace a single card.
-func cardFragment(view service.EditorView, l *domain.Lineup) templ.Component {
-	return ui.LineupCard(view, *l, resetEditState(l), ui.HeroFormState{Reset: true}, ui.SlotFormState{}, ui.RelicState{}, "", true)
+func cardFragment(view service.EditorView, l *domain.Lineup, focus string) templ.Component {
+	return ui.LineupCard(view, *l, resetEditState(l), ui.HeroFormState{Reset: focus == "hero"}, ui.SlotFormState{}, ui.RelicState{}, "", true, focus == "edit")
 }
 
 // addLineup adds or copies a lineup card and answers with cards + pips per the
@@ -57,7 +58,7 @@ func (s *Server) addLineup(w http.ResponseWriter, r *http.Request) {
 		Losses:    f.int("losses"),
 		Networth:  f.int("networth"),
 	}
-	view, err := s.entry.AddLineup(r.Context(), id, cmd, copyFrom)
+	view, newID, err := s.entry.AddLineup(r.Context(), id, cmd, copyFrom)
 	if err != nil {
 		s.lineupFormError(w, r, id, copyFrom, err)
 		return
@@ -66,7 +67,7 @@ func (s *Server) addLineup(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/matches/"+r.PathValue("id")+"/edit", http.StatusSeeOther)
 		return
 	}
-	renderOOB(s.log, w, r, http.StatusOK, ui.CardsRegion(view, ui.ResetAddForm(view), true), ui.PipsRegion(view, true))
+	renderOOB(s.log, w, r, http.StatusOK, ui.CardsRegion(view, ui.ResetAddForm(view), true, newID, "hero"), ui.PipsRegion(view, true))
 }
 
 // lineupFormError renders the issuing form's oob fragment with values preserved
@@ -74,7 +75,7 @@ func (s *Server) addLineup(w http.ResponseWriter, r *http.Request) {
 func (s *Server) lineupFormError(w http.ResponseWriter, r *http.Request, matchID, copyFrom int64, err error) {
 	view, verr := s.entry.Editor(r.Context(), matchID)
 	if verr != nil {
-		s.mutationFallback(w, r)
+		s.mutationFallback(w, r, verr)
 		return
 	}
 	st := ui.AddFormState{
@@ -104,7 +105,7 @@ func (s *Server) lineupFormError(w http.ResponseWriter, r *http.Request, matchID
 		// Field-less copy form: the error renders inline beside the button.
 		if l := lineupByID(view, copyFrom); l != nil {
 			renderOOB(s.log, w, r, http.StatusUnprocessableEntity,
-				ui.LineupCard(view, *l, resetEditState(l), ui.HeroFormState{Reset: true}, ui.SlotFormState{}, ui.RelicState{}, err.Error(), true))
+				ui.LineupCard(view, *l, resetEditState(l), ui.HeroFormState{}, ui.SlotFormState{}, ui.RelicState{}, err.Error(), true, false))
 			return
 		}
 	}
@@ -119,12 +120,12 @@ func (s *Server) updateLineup(w http.ResponseWriter, r *http.Request) {
 	mid := f.int64("match_id")
 	view, err := s.entry.Editor(r.Context(), mid)
 	if err != nil {
-		s.mutationFallback(w, r)
+		s.mutationFallback(w, r, err)
 		return
 	}
 	l := lineupByID(view, lid)
 	if l == nil {
-		s.mutationFallback(w, r)
+		s.mutationFallback(w, r, fmt.Errorf("lineup %d not in match %d", lid, mid))
 		return
 	}
 	placement := f.int("placement")
@@ -156,7 +157,7 @@ func (s *Server) updateLineup(w http.ResponseWriter, r *http.Request) {
 			s.editFormError(w, r, view, l, f, domain.ValidationError{{Field: "placement", Msg: pc.Error()}})
 			return
 		}
-		s.mutationFallback(w, r)
+		s.mutationFallback(w, r, err)
 		return
 	}
 	if !isHX(r) {
@@ -165,18 +166,18 @@ func (s *Server) updateLineup(w http.ResponseWriter, r *http.Request) {
 	}
 	fresh, err := s.entry.Editor(r.Context(), mid)
 	if err != nil {
-		s.mutationFallback(w, r)
+		s.mutationFallback(w, r, err)
 		return
 	}
 	if placement != l.Placement {
-		renderOOB(s.log, w, r, http.StatusOK, ui.CardsRegion(fresh, ui.ResetAddForm(fresh), true), ui.PipsRegion(fresh, true))
+		renderOOB(s.log, w, r, http.StatusOK, ui.CardsRegion(fresh, ui.ResetAddForm(fresh), true, lid, "edit"), ui.PipsRegion(fresh, true))
 		return
 	}
 	if nl := lineupByID(fresh, lid); nl != nil {
-		renderOOB(s.log, w, r, http.StatusOK, cardFragment(fresh, nl), ui.PipsRegion(fresh, true))
+		renderOOB(s.log, w, r, http.StatusOK, cardFragment(fresh, nl, "edit"), ui.PipsRegion(fresh, true))
 		return
 	}
-	renderOOB(s.log, w, r, http.StatusOK, ui.CardsRegion(fresh, ui.ResetAddForm(fresh), true), ui.PipsRegion(fresh, true))
+	renderOOB(s.log, w, r, http.StatusOK, ui.CardsRegion(fresh, ui.ResetAddForm(fresh), true, 0, ""), ui.PipsRegion(fresh, true))
 }
 
 func (s *Server) editFormError(w http.ResponseWriter, r *http.Request, view service.EditorView, l *domain.Lineup, f formValues, errs domain.ValidationError) {
@@ -203,7 +204,7 @@ func (s *Server) deleteLineup(w http.ResponseWriter, r *http.Request) {
 	f := parseForm(r)
 	mid := f.int64("match_id")
 	if err := s.st.DeleteLineup(r.Context(), lid); err != nil {
-		s.mutationFallback(w, r)
+		s.mutationFallback(w, r, err)
 		return
 	}
 	if !isHX(r) {
@@ -212,8 +213,8 @@ func (s *Server) deleteLineup(w http.ResponseWriter, r *http.Request) {
 	}
 	view, err := s.entry.Editor(r.Context(), mid)
 	if err != nil {
-		s.mutationFallback(w, r)
+		s.mutationFallback(w, r, err)
 		return
 	}
-	renderOOB(s.log, w, r, http.StatusOK, ui.CardsRegion(view, ui.ResetAddForm(view), true), ui.PipsRegion(view, true))
+	renderOOB(s.log, w, r, http.StatusOK, ui.CardsRegion(view, ui.ResetAddForm(view), true, 0, ""), ui.PipsRegion(view, true))
 }

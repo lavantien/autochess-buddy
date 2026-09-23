@@ -17,17 +17,19 @@ func (s *Server) matchList(w http.ResponseWriter, r *http.Request) {
 	}
 	if version := r.URL.Query().Get("patch"); version != "" {
 		patches, err := s.st.ListPatches(r.Context())
-		if err == nil {
-			for _, p := range patches {
-				if p.Version == version {
-					f.PatchID = p.ID
-					break
-				}
+		if err != nil {
+			s.log.Warn("resolve patch filter", "err", err)
+		}
+		for _, p := range patches {
+			if p.Version == version {
+				f.PatchID = p.ID
+				break
 			}
 		}
 	}
 	rows, err := s.st.ListMatches(r.Context(), f)
 	if err != nil {
+		s.log.Warn("list matches", "err", err)
 		stubPage(s.log, "matches", "matches", "no matches yet. start one from the game you just finished.").ServeHTTP(w, r)
 		return
 	}
@@ -61,12 +63,15 @@ func (s *Server) createMatch(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		st.Errs = append(st.Errs, domain.FieldError{Field: "played_at", Msg: "played at must be a datetime."})
 	}
+	if len(st.Errs) > 0 {
+		patches, _ := s.st.ListPatches(r.Context())
+		renderPage(s.log, w, r, http.StatusUnprocessableEntity, ui.NewMatchPage(patches, st))
+		return
+	}
 	m := domain.Match{PatchID: f.int64("patch_id"), PlayedAt: playedAt, Source: st.Values["source"], Notes: f.str("notes")}
 	id, cerr := s.entry.CreateMatch(r.Context(), m)
-	if cerr != nil && len(st.Errs) == 0 {
+	if cerr != nil {
 		st.Errs = append(st.Errs, domain.FieldError{Field: "patch_id", Msg: "pick a patch from the list."})
-	}
-	if len(st.Errs) > 0 {
 		patches, _ := s.st.ListPatches(r.Context())
 		renderPage(s.log, w, r, http.StatusUnprocessableEntity, ui.NewMatchPage(patches, st))
 		return
@@ -79,12 +84,14 @@ func (s *Server) matchDetail(w http.ResponseWriter, r *http.Request) {
 	id := pathID(r, "id")
 	m, lineups, err := s.st.GetMatch(r.Context(), id)
 	if err != nil {
+		s.log.Warn("match detail", "err", err)
 		stubPage(s.log, "matches", "matches", "no matches yet. start one from the game you just finished.").ServeHTTP(w, r)
 		return
 	}
 	p, err := s.st.GetPatch(r.Context(), m.PatchID)
 	if err != nil {
-		s.mutationFallback(w, r)
+		s.log.Warn("match detail patch", "err", err)
+		s.mutationFallback(w, r, err)
 		return
 	}
 	renderPage(s.log, w, r, http.StatusOK, ui.MatchDetailPage(m, p.Version, lineups))
@@ -96,6 +103,7 @@ func (s *Server) editorPage(w http.ResponseWriter, r *http.Request) {
 	id := pathID(r, "id")
 	view, err := s.entry.Editor(r.Context(), id)
 	if err != nil {
+		s.log.Warn("editor", "err", err)
 		stubPage(s.log, "matches", "matches", "no matches yet. start one from the game you just finished.").ServeHTTP(w, r)
 		return
 	}
@@ -116,12 +124,12 @@ func (s *Server) finalize(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if errors.Is(err, domain.ErrNotFound) {
-		s.mutationFallback(w, r)
+		s.mutationFallback(w, r, nil)
 		return
 	}
 	view, verr := s.entry.Editor(r.Context(), id)
 	if verr != nil {
-		s.mutationFallback(w, r)
+		s.mutationFallback(w, r, verr)
 		return
 	}
 	renderPage(s.log, w, r, http.StatusOK, ui.EditorPage(view, err.Error()))

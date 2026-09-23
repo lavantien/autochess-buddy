@@ -54,7 +54,10 @@ func (s *Server) dashFilter(r *http.Request) (analytics.Filter, string) {
 func (s *Server) dashPanel(w http.ResponseWriter, r *http.Request, view string, f analytics.Filter) (templ.Component, int, bool) {
 	ctx := r.Context()
 	n := 0
-	if count, err := s.dash.LineupsInView(ctx, f); err == nil {
+	count, err := s.dash.LineupsInView(ctx, f)
+	if err != nil {
+		s.log.Warn("lineups in view", "err", err)
+	} else {
 		n = count
 	}
 	var panel templ.Component
@@ -62,6 +65,7 @@ func (s *Server) dashPanel(w http.ResponseWriter, r *http.Request, view string, 
 	case "heroes":
 		rows, err := s.dash.HeroPerformance(ctx, f)
 		if err != nil {
+			s.log.Warn("hero performance", "err", err)
 			stubPage(s.log, "dashboard", "dashboard", "no finalized matches for this filter yet. finalize a few matches first.").ServeHTTP(w, r)
 			return nil, 0, false
 		}
@@ -74,6 +78,7 @@ func (s *Server) dashPanel(w http.ResponseWriter, r *http.Request, view string, 
 	case "synergies":
 		rows, err := s.dash.SynergyPerformance(ctx, f)
 		if err != nil {
+			s.log.Warn("synergy performance", "err", err)
 			stubPage(s.log, "dashboard", "dashboard", "no finalized matches for this filter yet. finalize a few matches first.").ServeHTTP(w, r)
 			return nil, 0, false
 		}
@@ -81,6 +86,7 @@ func (s *Server) dashPanel(w http.ResponseWriter, r *http.Request, view string, 
 	case "items":
 		rows, err := s.dash.ItemPerformance(ctx, f)
 		if err != nil {
+			s.log.Warn("item performance", "err", err)
 			stubPage(s.log, "dashboard", "dashboard", "no finalized matches for this filter yet. finalize a few matches first.").ServeHTTP(w, r)
 			return nil, 0, false
 		}
@@ -88,6 +94,7 @@ func (s *Server) dashPanel(w http.ResponseWriter, r *http.Request, view string, 
 	case "relics":
 		rows, err := s.dash.RelicPerformance(ctx, f)
 		if err != nil {
+			s.log.Warn("relic performance", "err", err)
 			stubPage(s.log, "dashboard", "dashboard", "no finalized matches for this filter yet. finalize a few matches first.").ServeHTTP(w, r)
 			return nil, 0, false
 		}

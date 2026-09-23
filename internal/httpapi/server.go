@@ -111,8 +111,12 @@ func stubPage(log *slog.Logger, section, title, message string) http.HandlerFunc
 }
 
 // mutationFallback answers requests whose match context cannot be loaded: non-hx
-// gets sent back to the matches list, hx gets a bare 422 with no fragments.
-func (s *Server) mutationFallback(w http.ResponseWriter, r *http.Request) {
+// gets sent back to the matches list, hx gets a bare 422 with no fragments. The
+// cause is logged so a failure never looks like quiet success.
+func (s *Server) mutationFallback(w http.ResponseWriter, r *http.Request, cause error) {
+	if cause != nil {
+		s.log.Warn("mutation fallback", "method", r.Method, "path", r.URL.Path, "err", cause)
+	}
 	if isHX(r) {
 		w.WriteHeader(http.StatusUnprocessableEntity)
 		return

@@ -28,11 +28,11 @@ func (s *Server) codexDelete(w http.ResponseWriter, r *http.Request, entity stri
 				return
 			}
 		}
-		s.mutationFallback(w, r)
+		s.mutationFallback(w, r, nil)
 		return
 	}
 	if err != nil {
-		s.mutationFallback(w, r)
+		s.mutationFallback(w, r, err)
 		return
 	}
 	if isHX(r) {

@@ -64,19 +64,23 @@ func (st EditFormState) firstErrField() string {
 	return st.Errs[0].Field
 }
 
-// SlotFormState tells the grid which slot details render open and which slot
-// control carries an inline error.
+// SlotFormState tells the grid which slot details render open, which control
+// carries an inline error, and which control takes focus after the swap.
 type SlotFormState struct {
-	OpenSlotID int64
-	BadSlotID  int64
-	BadField   string // "stars" or "item"
-	BadMsg     string
+	OpenSlotID  int64
+	BadSlotID   int64
+	BadField    string // "stars" or "item"
+	BadMsg      string
+	FocusSlotID int64
+	FocusField  string // "stars", "item" or "details"
 }
 
-// RelicState carries the relic disclosure's render state.
+// RelicState carries the relic disclosure's render and focus state.
 type RelicState struct {
-	Open bool
-	Err  string
+	Open         bool
+	Err          string
+	Focus        bool
+	FocusSummary bool
 }
 
 // requiredTotal is 8 lineups for pro matches, 1 for mine.

@@ -59,7 +59,7 @@ func seedEditor(t *testing.T) editorFixture {
 	if err != nil {
 		t.Fatalf("match: %v", err)
 	}
-	view, err := entry.AddLineup(ctx, matchID, domain.AddLineupCmd{
+	view, _, err := entry.AddLineup(ctx, matchID, domain.AddLineupCmd{
 		Label: "first", Placement: 1,
 		Slots: []domain.Slot{{SlotIndex: 0, Hero: domain.Hero{ID: hero}, Stars: 2, Items: []domain.Item{{ID: itemID}}}},
 	}, 0)
@@ -239,7 +239,7 @@ func TestDeleteLineup_ReturnsCardsAndPips(t *testing.T) {
 func TestFinalize_NonHXRedirectsToDetail(t *testing.T) {
 	f := seedEditor(t)
 	for p := 2; p <= 8; p++ {
-		if _, err := f.entry.AddLineup(context.Background(), f.matchID, domain.AddLineupCmd{Label: "b" + strconv.Itoa(p), Placement: p}, 0); err != nil {
+		if _, _, err := f.entry.AddLineup(context.Background(), f.matchID, domain.AddLineupCmd{Label: "b" + strconv.Itoa(p), Placement: p}, 0); err != nil {
 			t.Fatalf("fill lineup %d: %v", p, err)
 		}
 	}

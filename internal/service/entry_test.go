@@ -88,10 +88,10 @@ func TestAddLineup_FriendlyPlacementConflict(t *testing.T) {
 	if err != nil {
 		t.Fatalf("create match: %v", err)
 	}
-	if _, err := svc.AddLineup(ctx, matchID, domain.AddLineupCmd{Label: "first", Placement: 1}, 0); err != nil {
+	if _, _, err := svc.AddLineup(ctx, matchID, domain.AddLineupCmd{Label: "first", Placement: 1}, 0); err != nil {
 		t.Fatalf("add first lineup: %v", err)
 	}
-	_, err = svc.AddLineup(ctx, matchID, domain.AddLineupCmd{Label: "clash", Placement: 1}, 0)
+	_, _, err = svc.AddLineup(ctx, matchID, domain.AddLineupCmd{Label: "clash", Placement: 1}, 0)
 	var pc *domain.PlacementConflictError
 	if !errors.As(err, &pc) {
 		t.Fatalf("conflict err = %v, want PlacementConflictError", err)
@@ -121,7 +121,7 @@ func TestAddLineup_UnknownHeroNameMapsToFriendlyCopy(t *testing.T) {
 		Label: "ghost", Placement: 1,
 		Slots: []domain.Slot{{SlotIndex: 0, Hero: domain.Hero{Name: "ghost"}}},
 	}
-	if _, err := svc.AddLineup(ctx, matchID, cmd, 0); err == nil ||
+	if _, _, err := svc.AddLineup(ctx, matchID, cmd, 0); err == nil ||
 		err.Error() != "no hero named ghost in the codex. add it first." {
 		t.Fatalf("unknown hero err = %v, want friendly copy", err)
 	}
@@ -141,7 +141,7 @@ func TestFinalize_RejectsProSevenLineups(t *testing.T) {
 
 	for i := 1; i <= 7; i++ {
 		cmd := domain.AddLineupCmd{Label: fmt.Sprintf("board %d", i), Placement: i}
-		if _, err := svc.AddLineup(ctx, matchID, cmd, 0); err != nil {
+		if _, _, err := svc.AddLineup(ctx, matchID, cmd, 0); err != nil {
 			t.Fatalf("add lineup %d: %v", i, err)
 		}
 	}
@@ -156,7 +156,7 @@ func TestFinalize_RejectsProSevenLineups(t *testing.T) {
 	if view.Match.FinalizedAt != 0 {
 		t.Fatalf("finalized_at = %d, want still draft", view.Match.FinalizedAt)
 	}
-	if _, err := svc.AddLineup(ctx, matchID, domain.AddLineupCmd{Label: "board 8", Placement: 8}, 0); err != nil {
+	if _, _, err := svc.AddLineup(ctx, matchID, domain.AddLineupCmd{Label: "board 8", Placement: 8}, 0); err != nil {
 		t.Fatalf("add lineup 8: %v", err)
 	}
 	if err := svc.FinalizeMatch(ctx, matchID); err != nil {
@@ -189,7 +189,7 @@ func TestCopyLineup_BoardClonedLabelKeptPlacementNext(t *testing.T) {
 		},
 		RelicIDs: []int64{relicID},
 	}
-	first, err := svc.AddLineup(ctx, matchID, cmd, 0)
+	first, _, err := svc.AddLineup(ctx, matchID, cmd, 0)
 	if err != nil {
 		t.Fatalf("add source lineup: %v", err)
 	}
@@ -198,7 +198,7 @@ func TestCopyLineup_BoardClonedLabelKeptPlacementNext(t *testing.T) {
 	}
 	boardID := first.Lineups[0].ID
 
-	view, err := svc.AddLineup(ctx, matchID, domain.AddLineupCmd{}, boardID)
+	view, _, err := svc.AddLineup(ctx, matchID, domain.AddLineupCmd{}, boardID)
 	if err != nil {
 		t.Fatalf("copy: %v", err)
 	}

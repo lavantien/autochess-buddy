@@ -1840,14 +1840,14 @@ func CodexDeleteForm(entity string, id int64, name string) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 134, "\" hx-sync=\"this:abort\"><button type=\"submit\" class=\"button button-destructive\" hx-disable=\"this\">delete ")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 134, "\" hx-swap=\"none\" hx-sync=\"this:abort\"><button type=\"submit\" class=\"button button-destructive\" hx-disable=\"this\">delete ")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var85 string
 		templ_7745c5c3_Var85, templ_7745c5c3_Err = templ.JoinStringErrs(entity)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/codexpages.templ`, Line: 311, Col: 91}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/codexpages.templ`, Line: 312, Col: 91}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var85))
 		if templ_7745c5c3_Err != nil {
@@ -1890,7 +1890,7 @@ func plainBody(entity string, rows []plainRow, form templ.Component, empty strin
 		var templ_7745c5c3_Var87 string
 		templ_7745c5c3_Var87, templ_7745c5c3_Err = templ.JoinStringErrs(entity)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/codexpages.templ`, Line: 317, Col: 13}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/codexpages.templ`, Line: 318, Col: 13}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var87))
 		if templ_7745c5c3_Err != nil {
@@ -1903,7 +1903,7 @@ func plainBody(entity string, rows []plainRow, form templ.Component, empty strin
 		var templ_7745c5c3_Var88 string
 		templ_7745c5c3_Var88, templ_7745c5c3_Err = templ.JoinStringErrs(entity)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/codexpages.templ`, Line: 319, Col: 25}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/codexpages.templ`, Line: 320, Col: 25}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var88))
 		if templ_7745c5c3_Err != nil {
@@ -1939,7 +1939,7 @@ func plainBody(entity string, rows []plainRow, form templ.Component, empty strin
 				var templ_7745c5c3_Var89 templ.SafeURL
 				templ_7745c5c3_Var89, templ_7745c5c3_Err = templ.JoinURLErrs(r.Href)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/codexpages.templ`, Line: 330, Col: 26}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/codexpages.templ`, Line: 331, Col: 26}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var89))
 				if templ_7745c5c3_Err != nil {
@@ -1952,7 +1952,7 @@ func plainBody(entity string, rows []plainRow, form templ.Component, empty strin
 				var templ_7745c5c3_Var90 string
 				templ_7745c5c3_Var90, templ_7745c5c3_Err = templ.JoinStringErrs(r.Label)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/codexpages.templ`, Line: 330, Col: 38}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/codexpages.templ`, Line: 331, Col: 38}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var90))
 				if templ_7745c5c3_Err != nil {
@@ -1965,7 +1965,7 @@ func plainBody(entity string, rows []plainRow, form templ.Component, empty strin
 				var templ_7745c5c3_Var91 string
 				templ_7745c5c3_Var91, templ_7745c5c3_Err = templ.JoinStringErrs(r.Extra)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/codexpages.templ`, Line: 331, Col: 19}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/codexpages.templ`, Line: 332, Col: 19}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var91))
 				if templ_7745c5c3_Err != nil {
@@ -2132,7 +2132,7 @@ func LadderEditor(entity string, e LadderEntry, st CodexFormState) templ.Compone
 		var templ_7745c5c3_Var95 templ.SafeURL
 		templ_7745c5c3_Var95, templ_7745c5c3_Err = templ.JoinURLErrs("/" + entity + "/" + itoa(e.ID))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/codexpages.templ`, Line: 391, Col: 62}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/codexpages.templ`, Line: 392, Col: 62}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var95))
 		if templ_7745c5c3_Err != nil {
@@ -2145,7 +2145,7 @@ func LadderEditor(entity string, e LadderEntry, st CodexFormState) templ.Compone
 		var templ_7745c5c3_Var96 string
 		templ_7745c5c3_Var96, templ_7745c5c3_Err = templ.ResolveAttributeValue(e.Name)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/codexpages.templ`, Line: 393, Col: 48}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/codexpages.templ`, Line: 394, Col: 48}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var96)
 		if templ_7745c5c3_Err != nil {
@@ -2158,7 +2158,7 @@ func LadderEditor(entity string, e LadderEntry, st CodexFormState) templ.Compone
 		var templ_7745c5c3_Var97 string
 		templ_7745c5c3_Var97, templ_7745c5c3_Err = templ.JoinStringErrs(entity)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/codexpages.templ`, Line: 394, Col: 84}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/codexpages.templ`, Line: 395, Col: 84}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var97))
 		if templ_7745c5c3_Err != nil {
@@ -2176,7 +2176,7 @@ func LadderEditor(entity string, e LadderEntry, st CodexFormState) templ.Compone
 			var templ_7745c5c3_Var98 string
 			templ_7745c5c3_Var98, templ_7745c5c3_Err = templ.JoinStringErrs(t.Count)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/codexpages.templ`, Line: 401, Col: 19}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/codexpages.templ`, Line: 402, Col: 19}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var98))
 			if templ_7745c5c3_Err != nil {
@@ -2189,7 +2189,7 @@ func LadderEditor(entity string, e LadderEntry, st CodexFormState) templ.Compone
 			var templ_7745c5c3_Var99 string
 			templ_7745c5c3_Var99, templ_7745c5c3_Err = templ.JoinStringErrs(t.Effect)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/codexpages.templ`, Line: 402, Col: 20}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/codexpages.templ`, Line: 403, Col: 20}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var99))
 			if templ_7745c5c3_Err != nil {
@@ -2202,7 +2202,7 @@ func LadderEditor(entity string, e LadderEntry, st CodexFormState) templ.Compone
 			var templ_7745c5c3_Var100 templ.SafeURL
 			templ_7745c5c3_Var100, templ_7745c5c3_Err = templ.JoinURLErrs("/" + entity + "/" + itoa(e.ID))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/codexpages.templ`, Line: 404, Col: 67}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/codexpages.templ`, Line: 405, Col: 67}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var100))
 			if templ_7745c5c3_Err != nil {
@@ -2215,7 +2215,7 @@ func LadderEditor(entity string, e LadderEntry, st CodexFormState) templ.Compone
 			var templ_7745c5c3_Var101 string
 			templ_7745c5c3_Var101, templ_7745c5c3_Err = templ.ResolveAttributeValue(itoa(int64(t.Count)))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/codexpages.templ`, Line: 406, Col: 70}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/codexpages.templ`, Line: 407, Col: 70}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var101)
 			if templ_7745c5c3_Err != nil {
@@ -2233,7 +2233,7 @@ func LadderEditor(entity string, e LadderEntry, st CodexFormState) templ.Compone
 		var templ_7745c5c3_Var102 templ.SafeURL
 		templ_7745c5c3_Var102, templ_7745c5c3_Err = templ.JoinURLErrs("/" + entity + "/" + itoa(e.ID))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/codexpages.templ`, Line: 414, Col: 62}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/codexpages.templ`, Line: 415, Col: 62}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var102))
 		if templ_7745c5c3_Err != nil {
@@ -2251,7 +2251,7 @@ func LadderEditor(entity string, e LadderEntry, st CodexFormState) templ.Compone
 			var templ_7745c5c3_Var103 string
 			templ_7745c5c3_Var103, templ_7745c5c3_Err = templ.JoinStringErrs(msg)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/codexpages.templ`, Line: 420, Col: 29}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/codexpages.templ`, Line: 421, Col: 29}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var103))
 			if templ_7745c5c3_Err != nil {

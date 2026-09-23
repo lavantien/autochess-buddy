@@ -145,7 +145,7 @@ func (s *Server) synergyUpdate(w http.ResponseWriter, r *http.Request, entity st
 func (s *Server) synergy422(w http.ResponseWriter, r *http.Request, fe domain.FieldError) {
 	races, err := s.ladderEntries(r, "races")
 	if err != nil {
-		s.mutationFallback(w, r)
+		s.mutationFallback(w, r, err)
 		return
 	}
 	classes, _ := s.ladderEntries(r, "classes")

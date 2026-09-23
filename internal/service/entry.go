@@ -38,29 +38,34 @@ func (s EntryService) CreateMatch(ctx context.Context, m domain.Match) (int64, e
 }
 
 // AddLineup validates and stores a new lineup, or when copyFrom is nonzero copies
-// that lineup instead. It returns the reloaded editor view either way.
-func (s EntryService) AddLineup(ctx context.Context, matchID int64, cmd domain.AddLineupCmd, copyFrom int64) (EditorView, error) {
+// that lineup instead. It returns the reloaded editor view and the new lineup's
+// id (0 on error) so the editor can focus the fresh card.
+func (s EntryService) AddLineup(ctx context.Context, matchID int64, cmd domain.AddLineupCmd, copyFrom int64) (EditorView, int64, error) {
 	m, _, err := s.St.GetMatch(ctx, matchID)
 	if err != nil {
-		return EditorView{}, err
+		return EditorView{}, 0, err
 	}
 	if m.FinalizedAt > 0 {
-		return EditorView{}, domain.ValidationError{{Field: "match", Msg: "this match is finalized and can no longer be edited."}}
+		return EditorView{}, 0, domain.ValidationError{{Field: "match", Msg: "this match is finalized and can no longer be edited."}}
 	}
 	if copyFrom != 0 {
-		if _, err := s.copyLineup(ctx, matchID, copyFrom); err != nil {
-			return EditorView{}, err
+		newID, err := s.copyLineup(ctx, matchID, copyFrom)
+		if err != nil {
+			return EditorView{}, 0, err
 		}
-		return s.Editor(ctx, matchID)
+		view, verr := s.Editor(ctx, matchID)
+		return view, newID, verr
 	}
 	cmd.MatchID = matchID
 	if err := s.validateLineup(ctx, matchID, cmd); err != nil {
-		return EditorView{}, err
+		return EditorView{}, 0, err
 	}
-	if _, err := s.St.AddLineup(ctx, cmd); err != nil {
-		return EditorView{}, err
+	newID, err := s.St.AddLineup(ctx, cmd)
+	if err != nil {
+		return EditorView{}, 0, err
 	}
-	return s.Editor(ctx, matchID)
+	view, verr := s.Editor(ctx, matchID)
+	return view, newID, verr
 }
 
 // validateLineup runs the friendly pre-checks: placement free, heroes resolvable,
