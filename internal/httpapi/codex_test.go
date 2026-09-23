@@ -262,7 +262,8 @@ func TestCodexIndexShowsSeededAnalytics(t *testing.T) {
 
 // TestCodexDelete_RerenderFailureLandsOnOwnTab drives the conflict arm's
 // rerender to failure: the degraded answer must stay on the entity's own tab,
-// not strand the user on the matches list.
+// and hx clients must get the fault notice fragment (the delete form swaps the
+// main region, so a bare status would blank the page).
 func TestCodexDelete_RerenderFailureLandsOnOwnTab(t *testing.T) {
 	f := seedEditor(t)
 	s := &Server{log: slog.Default(), st: f.st}
@@ -283,6 +284,14 @@ func TestCodexDelete_RerenderFailureLandsOnOwnTab(t *testing.T) {
 	hxRec := httptest.NewRecorder()
 	s.codexDelete(hxRec, hxReq, "items", f.itemID, boom)
 	if hxRec.Code != http.StatusUnprocessableEntity {
-		t.Fatalf("hx status = %d, want bare 422", hxRec.Code)
+		t.Fatalf("hx status = %d, want 422", hxRec.Code)
+	}
+	if body := hxRec.Body.String(); !strings.Contains(body, "that delete did not land.") {
+		t.Fatalf("hx fallback must carry the fault notice, got %s", clip(body))
+	}
+
+	// The in-use row survives both refused attempts.
+	if _, _, err := f.st.GetItem(context.Background(), f.itemID); err != nil {
+		t.Fatalf("in-use item must survive the refused delete: %v", err)
 	}
 }

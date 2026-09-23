@@ -215,7 +215,7 @@ grim jaw       4    human        warrior       38      4.0
 dusk ranger    3    elf, beast   hunter        21      4.4
 ```
 
-- codex create and edit are plain full page posts with 303 redirects, no htmx, matching the handler to store path in the architecture. codex deletes use hx-delete with hx-confirm and the server answers with the `HX-Redirect` response header to the codex index: html forms cannot issue a delete method, and an htmx delete needs a navigation answer rather than a swap
+- codex create and edit are plain full page posts with 303 redirects, no htmx, matching the handler to store path in the architecture. codex deletes use hx-delete with hx-confirm: html forms cannot issue a delete method, success answers 204 plus the `HX-Redirect` response header to the codex index, and a delete history still refuses answers 409 with the conflict page, which the form swaps into the main region with `hx-select="main > *"` so the page's own chrome replaces itself without duplicating
 - field lists, one per entity, straight from the schema:
   - hero: name, cost 1 to 5, race 1 plus optional race 2, class 1 plus optional class 2, ability, notes. the race and class selects are populated by the synergies tab, so a fresh install creates races and classes first
   - item: name, tier, effect, components (multi select over items, the recipe picker)
@@ -287,7 +287,7 @@ stable ids: `cards-{matchId}`, `pips-{matchId}`, `addform-{matchId}`, `card-{lin
 | validation error | any mutation above | the issuing form with values and errors | first errored field |
 | create match | POST /matches/new | none, plain post, 303 redirect | n/a |
 | codex save | POST codex routes | none, plain post, 303 redirect | n/a |
-| codex delete | DELETE /heroes/{id} and siblings | none, hx-delete with hx-confirm, HX-Redirect to the codex index | n/a |
+| codex delete | DELETE /heroes/{id} and siblings | hx-delete with hx-confirm: 409 conflict page into main via hx-select, success 204 + HX-Redirect to the codex index | conflict banner |
 | finalize | POST /matches/{id}/finalize | none, plain post, 303 redirect | n/a |
 
 focus movement is part of the contract, not decoration: htmx swaps that destroy or replace the focused control drop focus to the body. focus targets get their own ids (the `heroform-{lineupId}` input, the first errored field, the captured neighbor). the move runs in the after-swap phase for oob content, wired with htmx's own `hx-on` hooks. the 2 delete rows capture the neighbor in the before-swap phase, before the node is gone. this is the only permitted wiring beyond declarative attributes.

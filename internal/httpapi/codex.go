@@ -18,20 +18,20 @@ func formState(r *http.Request, keys ...string) ui.CodexFormState {
 	return st
 }
 
-// codexDelete answers hx-delete with 204 plus the HX-Redirect header (204 is
-// never swapped, so the empty success body cannot wipe the page) and plain
-// requests with a 303; entities referenced by history render the conflict page
-// instead, which the delete form swaps into the page's main region.
+// codexDelete answers hx-delete with the HX-Redirect header on a 204 (htmx
+// acts on the header before any swap, and 204 is never a swap candidate) and
+// plain requests with a 303; entities referenced by history render the
+// conflict page instead, which the delete form swaps into the main region.
 func (s *Server) codexDelete(w http.ResponseWriter, r *http.Request, entity string, id int64, rerender func() error) {
 	err := s.deleteEntity(r, entity, id)
 	if errors.Is(err, domain.ErrInUse) {
 		if rerr := rerender(); rerr != nil {
-			s.mutationFallbackTo(w, r, rerr, "/"+entity)
+			s.codexDeleteFallback(w, r, entity, rerr)
 		}
 		return
 	}
 	if err != nil {
-		s.mutationFallback(w, r, err)
+		s.codexDeleteFallback(w, r, entity, err)
 		return
 	}
 	if isHX(r) {
@@ -264,6 +264,21 @@ func (s *Server) proDelete(w http.ResponseWriter, r *http.Request) {
 		renderPage(s.log, w, r, http.StatusConflict, ui.ProEditPage(p, ui.NewCodexForm(), domain.ErrInUse.Error()))
 		return nil
 	})
+}
+
+// codexDeleteFallback answers a delete the store would not run or a conflict
+// rerender that failed: plain requests land on the entity's tab, hx clients
+// get a one-line notice fragment, since the delete form swaps the main region
+// and a bare status would blank the page.
+func (s *Server) codexDeleteFallback(w http.ResponseWriter, r *http.Request, entity string, cause error) {
+	if cause != nil {
+		s.log.Warn("codex delete fallback", "method", r.Method, "path", r.URL.Path, "err", cause)
+	}
+	if isHX(r) {
+		renderOOB(s.log, w, r, http.StatusUnprocessableEntity, ui.CodexFaultNotice())
+		return
+	}
+	http.Redirect(w, r, "/"+entity, http.StatusSeeOther)
 }
 
 // deleteEntity dispatches one delete to the store.

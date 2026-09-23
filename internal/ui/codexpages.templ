@@ -46,7 +46,7 @@ templ HeroEditPage(h domain.Hero, races []domain.Race, classes []domain.Class, s
 templ heroEditBody(h domain.Hero, races []domain.Race, classes []domain.Class, st CodexFormState, conflict string) {
 	<h1>{ h.Name }</h1>
 	if conflict != "" {
-		<p class="banner" role="alert">{ conflict }</p>
+		<p class="banner" role="alert" tabindex="-1" data-autofocus>{ conflict }</p>
 	}
 	@HeroFields(races, classes, st, h.ID, "save hero")
 	@CodexDeleteForm("hero", h.ID, h.Name)
@@ -156,7 +156,7 @@ templ ItemEditPage(it domain.Item, all []domain.Item, st CodexFormState, conflic
 templ itemEditBody(it domain.Item, all []domain.Item, st CodexFormState, conflict string) {
 	<h1>{ it.Name }</h1>
 	if conflict != "" {
-		<p class="banner" role="alert">{ conflict }</p>
+		<p class="banner" role="alert" tabindex="-1" data-autofocus>{ conflict }</p>
 	}
 	@ItemForm(all, st, it.ID, "save item")
 	@CodexDeleteForm("item", it.ID, it.Name)
@@ -208,7 +208,7 @@ templ RelicEditPage(r domain.Relic, st CodexFormState, conflict string) {
 templ relicEditBody(r domain.Relic, st CodexFormState, conflict string) {
 	<h1>{ r.Name }</h1>
 	if conflict != "" {
-		<p class="banner" role="alert">{ conflict }</p>
+		<p class="banner" role="alert" tabindex="-1" data-autofocus>{ conflict }</p>
 	}
 	@relicForm(st, r.ID)
 	@CodexDeleteForm("relic", r.ID, r.Name)
@@ -242,7 +242,7 @@ templ PatchEditPage(p domain.Patch, st CodexFormState, conflict string) {
 templ patchEditBody(p domain.Patch, st CodexFormState, conflict string) {
 	<h1>{ p.Version }</h1>
 	if conflict != "" {
-		<p class="banner" role="alert">{ conflict }</p>
+		<p class="banner" role="alert" tabindex="-1" data-autofocus>{ conflict }</p>
 	}
 	@patchForm(st, p.ID)
 	@CodexDeleteForm("patch", p.ID, p.Version)
@@ -276,7 +276,7 @@ templ ProEditPage(p domain.Pro, st CodexFormState, conflict string) {
 templ proEditBody(p domain.Pro, st CodexFormState, conflict string) {
 	<h1>{ p.Name }</h1>
 	if conflict != "" {
-		<p class="banner" role="alert">{ conflict }</p>
+		<p class="banner" role="alert" tabindex="-1" data-autofocus>{ conflict }</p>
 	}
 	@proForm(st, p.ID)
 	@CodexDeleteForm("pro", p.ID, p.Name)
@@ -303,9 +303,18 @@ templ proForm(st CodexFormState, id int64) {
 	</form>
 }
 
+// CodexFaultNotice is the degraded answer a failed codex delete swaps in: one
+// line, no chrome, so a fault never wipes the page silently.
+templ CodexFaultNotice() {
+	<section>
+		@EmptyState("that delete did not land. reload the page and try again.", nil)
+	</section>
+}
+
 // CodexDeleteForm is the hx-delete + confirm control every edit page carries.
 // Success answers 204 + HX-Redirect (nothing swaps); a 409 conflict page swaps
-// into the page's main region so the browser shows what refused the delete.
+// its own tab strip and content into the main region, selected out of the full
+// page so no chrome duplicates and no scripts re-run.
 templ CodexDeleteForm(entity string, id int64, name string) {
 	<form
 		class="inline-form"
@@ -313,6 +322,7 @@ templ CodexDeleteForm(entity string, id int64, name string) {
 		hx-confirm={ "delete " + name + "? existing matches keep their history." }
 		hx-target="closest main"
 		hx-swap="innerHTML"
+		hx-select="main > *"
 		hx-sync="this:abort"
 	>
 		<button type="submit" class="button button-destructive" hx-disable="this">delete { entity }</button>

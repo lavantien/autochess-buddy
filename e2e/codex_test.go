@@ -4,6 +4,7 @@ package e2e
 
 import (
 	"context"
+	"fmt"
 	"strconv"
 	"strings"
 	"testing"
@@ -69,8 +70,9 @@ func TestCodexHeroFlow(t *testing.T) {
 }
 
 // TestCodexDeleteConflictShowsInBrowser: an in-use item's delete must surface
-// the 409 conflict page in the browser, not just over plain http. htmx swaps
-// the response into the page so the banner names the conflict.
+// the 409 conflict page in the browser, not just over plain http. the swap
+// replaces the main region's own content (one tab strip, no nested chrome,
+// no re-run scripts) and repeats without compounding.
 func TestCodexDeleteConflictShowsInBrowser(t *testing.T) {
 	base, st := newApp(t, true)
 	page := newPage(t, base)
@@ -84,8 +86,44 @@ func TestCodexDeleteConflictShowsInBrowser(t *testing.T) {
 	must(t, err)
 	waitFor(t, page, "form.inline-form")
 
+	assertShape := func(tag string) {
+		t.Helper()
+		got, err := page.Evaluate(`() => ({
+			topbars: document.querySelectorAll('header.topbar').length,
+			nestedMain: document.querySelectorAll('main main').length,
+			focusScripts: document.querySelectorAll('script[src="/static/focus.js"]').length,
+			banners: document.querySelectorAll('main .banner').length,
+			h1: document.querySelectorAll('main h1').length,
+		})`)
+		if err != nil {
+			t.Fatal(err)
+		}
+		m, ok := got.(map[string]interface{})
+		if !ok {
+			t.Fatalf("%s: shape probe returned %T", tag, got)
+		}
+		want := map[string]int{"topbars": 1, "nestedMain": 0, "focusScripts": 1, "banners": 1, "h1": 1}
+		for k, w := range want {
+			n, err := strconv.Atoi(fmt.Sprintf("%v", m[k]))
+			if err != nil || n != w {
+				t.Fatalf("%s: %s = %v, want %d (full %v)", tag, k, m[k], w, m)
+			}
+		}
+	}
+
 	must(t, page.GetByRole("button").Filter(playwright.LocatorFilterOptions{HasText: "delete item"}).Click())
 	waitText(t, page, ".banner", "existing matches keep their history.")
+	assertShape("after first refusal")
+	focused, err := page.Evaluate(`() => { var a = document.activeElement; return a ? a.className : ''; }`)
+	must(t, err)
+	if cls, _ := focused.(string); cls != "banner" {
+		t.Fatalf("focus after refusal = %q, want the conflict banner", cls)
+	}
+	// A repeated refusal from the swapped page must not compound the DOM.
+	must(t, page.GetByRole("button").Filter(playwright.LocatorFilterOptions{HasText: "delete item"}).Click())
+	waitText(t, page, ".banner", "existing matches keep their history.")
+	assertShape("after second refusal")
+
 	if got := page.URL(); !strings.Contains(got, path) {
 		t.Fatalf("conflict must stay on %s, navigated to %s", path, got)
 	}
