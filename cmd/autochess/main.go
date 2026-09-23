@@ -37,7 +37,9 @@ func main() {
 		return
 	}
 
-	if err := run(*addr, *dbPath, log); err != nil {
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+	if err := run(ctx, *addr, *dbPath, log); err != nil {
 		log.Error("serve", "err", err)
 		os.Exit(1)
 	}
@@ -60,9 +62,9 @@ func runSeed(dbPath string) error {
 	return nil
 }
 
-// run wires both engines and drains http first, then duckdb, then sqlite
-// (readme:211).
-func run(addr, dbPath string, log *slog.Logger) error {
+// run wires both engines, serves until ctx cancels, and drains http first,
+// then duckdb, then sqlite (readme:211).
+func run(ctx context.Context, addr, dbPath string, log *slog.Logger) error {
 	if err := os.MkdirAll(filepath.Dir(dbPath), 0o755); err != nil {
 		return err
 	}
@@ -84,9 +86,6 @@ func run(addr, dbPath string, log *slog.Logger) error {
 		Handler:           httpapi.New(log, st, service.EntryService{St: st}, dash),
 		ReadHeaderTimeout: 5 * time.Second,
 	}
-
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-	defer stop()
 
 	errCh := make(chan error, 1)
 	go func() {
