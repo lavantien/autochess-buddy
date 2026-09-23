@@ -63,8 +63,9 @@ templ DashPanel(view string, table templ.Component) {
 	</div>
 }
 
-// HeroTable renders hero performance rows.
-templ HeroTable(rows []analytics.HeroRow) {
+// HeroTable renders hero performance rows with the networth curve pinned under
+// it, closing the readme metric list (frontend-design:124).
+templ HeroTable(rows []analytics.HeroRow, places []analytics.PlaceRow) {
 	if len(rows) == 0 {
 		@EmptyState("no finalized matches for this filter yet. finalize a few matches first.", nil)
 	} else {
@@ -82,6 +83,26 @@ templ HeroTable(rows []analytics.HeroRow) {
 						<td>{ num(r.AvgPlace) }</td>
 						<td>{ signed(r.VsField) }</td>
 						<td>@SpreadBar(r.Finishes)</td>
+					</tr>
+				}
+			</tbody>
+		</table>
+		@NetworthTable(places)
+	}
+}
+
+// NetworthTable is the compact placement curve at the dashboard bottom.
+templ NetworthTable(places []analytics.PlaceRow) {
+	if len(places) > 0 {
+		<h2>networth by placement</h2>
+		<table>
+			<thead><tr><th>place</th><th>avg networth</th><th>n</th></tr></thead>
+			<tbody>
+				for _, p := range places {
+					<tr>
+						<td>{ itoa(int64(p.Placement)) }</td>
+						<td>{ num(p.AvgNetworth) }</td>
+						<td>{ itoa(int64(p.N)) }</td>
 					</tr>
 				}
 			</tbody>

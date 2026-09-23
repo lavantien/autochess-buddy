@@ -42,6 +42,7 @@ func newDashTestServer(t *testing.T) (http.Handler, *sqlite.Store, service.Entry
 // feed the dashboard panel assertions.
 type fakeAnalytics struct {
 	heroRows    []analytics.HeroRow
+	placeRows   []analytics.PlaceRow
 	viewCount   int
 	lastFilter  analytics.Filter
 	filterCalls int
@@ -70,7 +71,7 @@ func (f *fakeAnalytics) RelicPerformance(ctx context.Context, fl analytics.Filte
 
 func (f *fakeAnalytics) NetworthByPlacement(ctx context.Context, fl analytics.Filter) ([]analytics.PlaceRow, error) {
 	f.lastFilter = fl
-	return nil, nil
+	return f.placeRows, nil
 }
 
 func (f *fakeAnalytics) LineupsInView(ctx context.Context, fl analytics.Filter) (int, error) {

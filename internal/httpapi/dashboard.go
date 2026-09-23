@@ -65,7 +65,12 @@ func (s *Server) dashPanel(w http.ResponseWriter, r *http.Request, view string, 
 			stubPage(s.log, "dashboard", "dashboard", "no finalized matches for this filter yet. finalize a few matches first.").ServeHTTP(w, r)
 			return nil, 0, false
 		}
-		panel = ui.HeroTable(rows)
+		places, perr := s.dash.NetworthByPlacement(ctx, f)
+		if perr != nil {
+			stubPage(s.log, "dashboard", "dashboard", "no finalized matches for this filter yet. finalize a few matches first.").ServeHTTP(w, r)
+			return nil, 0, false
+		}
+		panel = ui.HeroTable(rows, places)
 	case "synergies":
 		rows, err := s.dash.SynergyPerformance(ctx, f)
 		if err != nil {
