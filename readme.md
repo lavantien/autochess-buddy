@@ -1,5 +1,8 @@
 # autochess companion
 
+[![ci](https://github.com/lavantien/autochess-buddy/actions/workflows/ci.yml/badge.svg)](https://github.com/lavantien/autochess-buddy/actions/workflows/ci.yml)
+[![coverage](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Flavantien%2Fautochess-buddy%2Fbadges%2Fcoverage.json)](https://github.com/lavantien/autochess-buddy/actions/workflows/ci.yml)
+
 <!-- ac-shot:start -->
 ![dashboard](docs/screenshots/dashboard.png)
 <!-- ac-shot:end -->
