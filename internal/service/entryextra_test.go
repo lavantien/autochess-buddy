@@ -4,9 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"path/filepath"
 	"testing"
 
 	"github.com/lavantien/autochess-buddy/internal/domain"
+	"github.com/lavantien/autochess-buddy/internal/store/sqlite"
 )
 
 // assertFieldErrors pins a ValidationError's collected field errors verbatim,
@@ -288,5 +290,35 @@ func TestEditor_PatchDeleteRefusedBehindMatchAndUnknownMatch(t *testing.T) {
 
 	if _, err := svc.Editor(ctx, 999); !errors.Is(err, domain.ErrNotFound) {
 		t.Fatalf("editor unknown match err = %v, want ErrNotFound passthrough", err)
+	}
+}
+
+// TestEditor_DanglingPatchRowFailsLoad pins the GetPatch failure arm: the
+// editor loads the match first, then the patch, and a patch row that vanished
+// mid-load (only direct sql can dangle it; the app-side delete is refused by
+// the FK) must surface as ErrNotFound, never as a half-loaded view.
+func TestEditor_DanglingPatchRowFailsLoad(t *testing.T) {
+	ctx := context.Background()
+	path := filepath.Join(t.TempDir(), "dangling.db")
+	st, err := sqlite.Open(path)
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	t.Cleanup(func() { _ = st.Close() })
+	svc := EntryService{St: st}
+	patchID, _, _, _, _, _ := seedCodex(t, svc)
+	matchID, err := svc.CreateMatch(ctx, domain.Match{PatchID: patchID, PlayedAt: 1789000000, Source: "pro"})
+	if err != nil {
+		t.Fatalf("create match: %v", err)
+	}
+
+	// One multi-statement exec on a single pooled connection: the pragma
+	// applies to that connection only, long enough to orphan the row.
+	if _, err := st.DB.ExecContext(ctx, `PRAGMA foreign_keys=off; DELETE FROM patches WHERE id = ?; PRAGMA foreign_keys=on;`, patchID); err != nil {
+		t.Fatalf("dangle patch row: %v", err)
+	}
+
+	if _, err := svc.Editor(ctx, matchID); !errors.Is(err, domain.ErrNotFound) {
+		t.Fatalf("editor err = %v, want ErrNotFound from the patch load", err)
 	}
 }
