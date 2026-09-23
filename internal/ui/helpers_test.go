@@ -40,9 +40,9 @@ func TestAvgText(t *testing.T) {
 
 func TestSigned(t *testing.T) {
 	cases := map[float64]string{
-		2.5:   "+2.5",
-		0:     "0.0",
-		-1.5:  "-1.5",
+		2.5:  "+2.5",
+		0:    "0.0",
+		-1.5: "-1.5",
 	}
 	for in, want := range cases {
 		if got := signed(in); got != want {
