@@ -3,6 +3,9 @@
 package e2e
 
 import (
+	"context"
+	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/mxschmitt/playwright-go"
@@ -63,4 +66,31 @@ func TestCodexHeroFlow(t *testing.T) {
 	must(t, page.GetByRole("button").Filter(playwright.LocatorFilterOptions{HasText: "delete hero"}).Click())
 	must(t, page.WaitForURL("**/heroes"))
 	gone(t, page.Locator("table a:has-text('grim jaw')"))
+}
+
+// TestCodexDeleteConflictShowsInBrowser: an in-use item's delete must surface
+// the 409 conflict page in the browser, not just over plain http. htmx swaps
+// the response into the page so the banner names the conflict.
+func TestCodexDeleteConflictShowsInBrowser(t *testing.T) {
+	base, st := newApp(t, true)
+	page := newPage(t, base)
+
+	var itemID int64
+	if err := st.DB.QueryRow(`SELECT item_id FROM slot_items LIMIT 1`).Scan(&itemID); err != nil {
+		t.Fatalf("find an in-use item: %v", err)
+	}
+	path := "/items/" + strconv.FormatInt(itemID, 10)
+	_, err := page.Goto(base + path)
+	must(t, err)
+	waitFor(t, page, "form.inline-form")
+
+	must(t, page.GetByRole("button").Filter(playwright.LocatorFilterOptions{HasText: "delete item"}).Click())
+	waitText(t, page, ".banner", "existing matches keep their history.")
+	if got := page.URL(); !strings.Contains(got, path) {
+		t.Fatalf("conflict must stay on %s, navigated to %s", path, got)
+	}
+	// The row survives: the store refused the delete.
+	if _, _, err := st.GetItem(context.Background(), itemID); err != nil {
+		t.Fatalf("in-use item must survive the refused delete: %v", err)
+	}
 }

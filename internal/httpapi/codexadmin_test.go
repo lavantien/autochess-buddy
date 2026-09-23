@@ -319,8 +319,8 @@ func TestCodexAdminEntityFlows(t *testing.T) {
 				f := seedEditor(t)
 				id := e.spare(t, &f, "spare row")
 				rec := del(t, f, id, true)
-				if rec.Code != http.StatusOK {
-					t.Fatalf("status = %d, want 200: %s", rec.Code, clip(rec.Body.String()))
+				if rec.Code != http.StatusNoContent {
+					t.Fatalf("status = %d, want 204: %s", rec.Code, clip(rec.Body.String()))
 				}
 				if got := rec.Header().Get("HX-Redirect"); got != "/"+e.plural {
 					t.Fatalf("HX-Redirect = %q, want /%s", got, e.plural)

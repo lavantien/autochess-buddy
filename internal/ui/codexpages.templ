@@ -304,12 +304,15 @@ templ proForm(st CodexFormState, id int64) {
 }
 
 // CodexDeleteForm is the hx-delete + confirm control every edit page carries.
+// Success answers 204 + HX-Redirect (nothing swaps); a 409 conflict page swaps
+// into the page's main region so the browser shows what refused the delete.
 templ CodexDeleteForm(entity string, id int64, name string) {
 	<form
 		class="inline-form"
 		hx-delete={ "/" + entityPlural(entity) + "/" + itoa(id) }
 		hx-confirm={ "delete " + name + "? existing matches keep their history." }
-		hx-swap="none"
+		hx-target="closest main"
+		hx-swap="innerHTML"
 		hx-sync="this:abort"
 	>
 		<button type="submit" class="button button-destructive" hx-disable="this">delete { entity }</button>

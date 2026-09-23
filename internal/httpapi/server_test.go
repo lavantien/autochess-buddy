@@ -110,14 +110,14 @@ func TestRoutes_RenderSpecEmptyStates(t *testing.T) {
 func TestRoutes_HxMutationsReturnPlainStatus(t *testing.T) {
 	h, _, _ := newTestServer(t)
 	// Real handlers answer missing match context with a bare 422 (no fragments);
-	// codex stubs still answer 200 until their task lands.
+	// a codex delete answers 204 plus the HX-Redirect header, never a page.
 	cases := []struct {
 		method, path string
 		want         int
 	}{
 		{"POST", "/matches/14/lineups", http.StatusUnprocessableEntity},
 		{"POST", "/slots/3/items", http.StatusUnprocessableEntity},
-		{"DELETE", "/heroes/1", http.StatusOK},
+		{"DELETE", "/heroes/1", http.StatusNoContent},
 		{"DELETE", "/slots/3", http.StatusUnprocessableEntity},
 	}
 	for _, c := range cases {

@@ -18,8 +18,10 @@ func formState(r *http.Request, keys ...string) ui.CodexFormState {
 	return st
 }
 
-// codexDelete answers hx-delete with the HX-Redirect header and plain requests
-// with a 303; entities referenced by history render the conflict instead.
+// codexDelete answers hx-delete with 204 plus the HX-Redirect header (204 is
+// never swapped, so the empty success body cannot wipe the page) and plain
+// requests with a 303; entities referenced by history render the conflict page
+// instead, which the delete form swaps into the page's main region.
 func (s *Server) codexDelete(w http.ResponseWriter, r *http.Request, entity string, id int64, rerender func() error) {
 	err := s.deleteEntity(r, entity, id)
 	if errors.Is(err, domain.ErrInUse) {
@@ -40,7 +42,7 @@ func (s *Server) codexDelete(w http.ResponseWriter, r *http.Request, entity stri
 	}
 	if isHX(r) {
 		w.Header().Set("HX-Redirect", "/"+entity)
-		w.WriteHeader(http.StatusOK)
+		w.WriteHeader(http.StatusNoContent)
 		return
 	}
 	http.Redirect(w, r, "/"+entity, http.StatusSeeOther)

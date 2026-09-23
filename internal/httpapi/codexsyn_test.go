@@ -191,8 +191,8 @@ func TestDeleteRaceAndClassRoutes(t *testing.T) {
 		t.Fatalf("delete race status = %d location = %q, want 303 /races", rec.Code, rec.Header().Get("Location"))
 	}
 	rec = f.post(t, "DELETE", "/classes/"+strconv.FormatInt(class, 10), "", true)
-	if rec.Code != http.StatusOK || rec.Header().Get("HX-Redirect") != "/classes" {
-		t.Fatalf("delete class hx status = %d redirect = %q, want 200 /classes", rec.Code, rec.Header().Get("HX-Redirect"))
+	if rec.Code != http.StatusNoContent || rec.Header().Get("HX-Redirect") != "/classes" {
+		t.Fatalf("delete class hx status = %d redirect = %q, want 204 /classes", rec.Code, rec.Header().Get("HX-Redirect"))
 	}
 	races, err := f.st.ListRaces(ctx)
 	if err != nil {

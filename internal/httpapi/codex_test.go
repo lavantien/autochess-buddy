@@ -75,8 +75,8 @@ func TestDeleteHero_HXRedirectHeader(t *testing.T) {
 	req.Header.Set("Origin", "http://example.com")
 	rec := httptest.NewRecorder()
 	f.h.ServeHTTP(rec, req)
-	if rec.Code != http.StatusOK {
-		t.Fatalf("status = %d, want 200", rec.Code)
+	if rec.Code != http.StatusNoContent {
+		t.Fatalf("status = %d, want 204", rec.Code)
 	}
 	if got := rec.Header().Get("HX-Redirect"); got != "/heroes" {
 		t.Fatalf("HX-Redirect = %q, want /heroes", got)

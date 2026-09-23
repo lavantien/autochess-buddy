@@ -90,3 +90,17 @@ func TestEditDeleteFlow(t *testing.T) {
 		t.Fatalf("focus after lineup delete = %v, want the next card %s", got, nextCardID)
 	}
 }
+
+// TestEditorHeroRequiredVisible: submitting the hero form empty answers 422
+// with the hero form fragment, and the browser must show the inline error.
+func TestEditorHeroRequiredVisible(t *testing.T) {
+	base, _ := newApp(t, true)
+	page := newPage(t, base)
+
+	_, err := page.Goto(base + "/matches/6/edit")
+	must(t, err)
+	waitText(t, page, ".pip-count", "3/8")
+
+	must(t, page.Locator(".heroform button").Filter(playwright.LocatorFilterOptions{HasText: "add hero"}).First().Click())
+	waitText(t, page, ".heroform .fielderr", "hero is required.")
+}

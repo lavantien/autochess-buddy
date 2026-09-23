@@ -159,8 +159,8 @@ func TestItemDelete_SuccessForPlainAndHXClients(t *testing.T) {
 	}
 	plate := itemSpare(t, f, "iron plate")
 	rec = postDeleteItem(t, f, plate, true)
-	if rec.Code != http.StatusOK {
-		t.Fatalf("hx delete status = %d, want 200", rec.Code)
+	if rec.Code != http.StatusNoContent {
+		t.Fatalf("hx delete status = %d, want 204", rec.Code)
 	}
 	if got := rec.Header().Get("HX-Redirect"); got != "/items" {
 		t.Fatalf("HX-Redirect = %q, want /items", got)
