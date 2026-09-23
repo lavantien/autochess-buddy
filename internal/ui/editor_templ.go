@@ -781,7 +781,7 @@ func LineupCard(view service.EditorView, l domain.Lineup, editState EditFormStat
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 70, "\" hx-swap=\"none\" hx-confirm=\"delete this lineup? its heroes and items go with it.\" hx-sync=\"this:abort\" hx-on:htmx:before:swap=\"window.__acNext=this.closest('.lcard').querySelector('button, input, select, summary')\"><button type=\"submit\" class=\"button button-destructive\" hx-disable=\"this\">delete</button></form></footer></article>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 70, "\" hx-swap=\"none\" hx-confirm=\"delete this lineup? its heroes and items go with it.\" hx-sync=\"this:abort\" hx-on:htmx:before:swap=\"acCaptureCard(this)\"><button type=\"submit\" class=\"button button-destructive\" hx-disable=\"this\">delete</button></form></footer></article>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1426,7 +1426,7 @@ func SlotCell(view service.EditorView, l domain.Lineup, sl domain.Slot, st SlotF
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 138, "\" hx-swap=\"none\" hx-confirm=\"remove this hero from the lineup?\" hx-sync=\"this:abort\" hx-on:htmx:before:swap=\"window.__acNext=this.closest('.grid').querySelector('button, input, select, summary')\"><button type=\"submit\" class=\"button button-destructive\" hx-disable=\"this\">delete</button></form></details></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 138, "\" hx-swap=\"none\" hx-confirm=\"remove this hero from the lineup?\" hx-sync=\"this:abort\" hx-on:htmx:before:swap=\"acCaptureSlot(this)\"><button type=\"submit\" class=\"button button-destructive\" hx-disable=\"this\">delete</button></form></details></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

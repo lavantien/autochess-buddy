@@ -54,19 +54,39 @@ func TestEditDeleteFlow(t *testing.T) {
 	must(t, slot.Locator(".chip button").First().Click())
 	must(t, page.Locator("[id^='grid-']").First().WaitFor())
 
-	// Delete the slot with the confirm; the placeholder returns and the next add
-	// refills the lowest free cell.
+	// Delete the slot with the confirm; the placeholder returns, focus lands on
+	// the next slot in the same card, and the next add refills the lowest free
+	// cell.
+	next := firstNow.Locator(".slot:not(.slot-empty)").Nth(1)
+	nextID, err := next.GetAttribute("id")
+	must(t, err)
+	goneID, err := slot.GetAttribute("id")
+	must(t, err)
 	must(t, slot.GetByRole("button").Filter(playwright.LocatorFilterOptions{HasText: "delete"}).Click())
-	must(t, page.Locator(".slot-empty").First().WaitFor())
+	// The board already holds empty cells, so gate on the deleted id vanishing.
+	_, err = page.WaitForFunction("id => !document.getElementById(id)", goneID)
+	must(t, err)
+	got, err := page.Evaluate("() => { var a = document.activeElement; var c = a && a.closest('[id^=slot-]'); return c ? c.id : ''; }")
+	must(t, err)
+	if id, _ := got.(string); id != nextID {
+		t.Fatalf("focus after slot delete = %v, want the next slot cell %s", got, nextID)
+	}
 	must(t, firstNow.Locator(".heroform input[name='hero']").Fill("sky breaker"))
 	must(t, firstNow.Locator(".heroform button").Filter(playwright.LocatorFilterOptions{HasText: "add hero"}).Click())
 	must(t, page.Locator(".slot:has-text('sky breaker')").First().WaitFor())
 
-	// Delete a lineup: pips drop, focus lands on a neighbor in the same card set.
+	// Delete a lineup: pips drop, focus lands on the next card.
 	before, err := page.Locator("[id^='card-']").Count()
+	must(t, err)
+	nextCardID, err := page.Locator("[id^='card-']").Nth(1).GetAttribute("id")
 	must(t, err)
 	must(t, firstNow.GetByRole("button").Filter(playwright.LocatorFilterOptions{HasText: "delete"}).Last().Click())
 	waitText(t, page, ".pip-count", "2/8")
 	_, err = page.WaitForFunction("n => document.querySelectorAll('[id^=card-]').length === n", before-1)
 	must(t, err)
+	got, err = page.Evaluate("() => { var a = document.activeElement; var c = a && a.closest('[id^=card-]'); return c ? c.id : ''; }")
+	must(t, err)
+	if id, _ := got.(string); id != nextCardID {
+		t.Fatalf("focus after lineup delete = %v, want the next card %s", got, nextCardID)
+	}
 }

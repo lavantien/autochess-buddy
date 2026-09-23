@@ -141,7 +141,7 @@ templ LineupCard(view service.EditorView, l domain.Lineup, editState EditFormSta
 				hx-swap="none"
 				hx-confirm="delete this lineup? its heroes and items go with it."
 				hx-sync="this:abort"
-				hx-on:htmx:before:swap="window.__acNext=this.closest('.lcard').querySelector('button, input, select, summary')"
+				hx-on:htmx:before:swap="acCaptureCard(this)"
 			>
 				<button type="submit" class="button button-destructive" hx-disable="this">delete</button>
 			</form>
@@ -276,7 +276,7 @@ templ SlotCell(view service.EditorView, l domain.Lineup, sl domain.Slot, st Slot
 				hx-swap="none"
 				hx-confirm="remove this hero from the lineup?"
 				hx-sync="this:abort"
-				hx-on:htmx:before:swap="window.__acNext=this.closest('.grid').querySelector('button, input, select, summary')"
+				hx-on:htmx:before:swap="acCaptureSlot(this)"
 			>
 				<button type="submit" class="button button-destructive" hx-disable="this">delete</button>
 			</form>

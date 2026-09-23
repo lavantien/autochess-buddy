@@ -65,15 +65,20 @@ After any swap, focus goes where the user's hands should be next: the just added
 
 ```
 templ side:  data-autofocus?={ cond }   (only rendered when true)
-delete side: hx-on:htmx:before:swap captures the next focusable
-             neighbor into window.__acNext
-focus.js:    on htmx:after:swap -> focus [data-autofocus],
-             else focus __acNext and clear it
+delete side: hx-on:htmx:before:swap captures a neighbor ID into
+             window.__acNext: slot delete takes the previous slot
+             cell, else the next, else heroform-{id}; lineup delete
+             takes the next card, else addform-{id}
+focus.js:    on htmx:after:swap -> resolve __acNext's id in the
+             fresh dom and focus its first focusable, else focus
+             [data-autofocus] and consume the attribute
 ```
 
 focus.js is the only sanctioned script beyond htmx itself, served from /static with defer.
 
 Defense:
+- why ids and not node references in the capture: the delete response replaces the whole grid or cards region, so a captured node is detached by the time after:swap fires and focusing it is a no-op. An id re-resolves inside the fresh dom, which is also what the spec asks for: focus targets get their own ids.
+- why the autofocus attribute is consumed on focus: a stale data-autofocus in a region the swap never touched used to win the document-wide query on a later swap and steal focus from the delete capture. Removing the attribute after focusing makes each target one-shot, so the capture wins whenever a delete set one.
 - why one global listener and not per region: the spec allows one script. Document level events catch every swap regardless of which region changed.
 - why external file now: it used to be inline in the layout template. templ fmt shells out to prettier for script blocks and its windows bridge passes the temp filename through cmd.exe unexpanded, so formatting crashed. Moving the script to a static file removed the only script block in the repo and unblocked formatting. Same behavior, one less toolchain dependency.
 - the `?=` suffix matters: templ renders `attr={ false }` as a present attribute and html presence means true, which once made every select default to its last option. `attr?={ cond }` omits the attribute when false.
