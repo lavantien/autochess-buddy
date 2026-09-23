@@ -25,7 +25,7 @@ type engine struct {
 }
 
 // New attaches the sqlite file at dbPath read-only. mu is the store's write mutex.
-// The return widens to Service once the catalogue methods land on the engine.
+// The returned *engine implements the Service interface directly.
 func New(dbPath string, mu *sync.Mutex) (*engine, error) {
 	db, err := sql.Open("duckdb", "")
 	if err != nil {
