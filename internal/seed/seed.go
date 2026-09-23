@@ -14,16 +14,28 @@ var fixture string
 
 var ErrSeeded = errors.New("database already has matches")
 
-// Load applies the fixture in a single multi-statement exec. mattn only walks the
-// statement tail when the exec carries no args, so the fixture must stay argument-free.
+// Load applies the fixture atomically: the emptiness guard and the multi-statement
+// exec share one tx, so a mid-script failure rolls the whole seed back. mattn only
+// walks the statement tail when the exec carries no args, so the fixture must stay
+// argument-free.
 func Load(db *sql.DB) error {
+	ctx := context.Background()
+	tx, err := db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
 	var n int
-	if err := db.QueryRowContext(context.Background(), `SELECT count(*) FROM matches`).Scan(&n); err != nil {
+	if err := tx.QueryRowContext(ctx, `SELECT count(*) FROM matches`).Scan(&n); err != nil {
+		tx.Rollback()
 		return err
 	}
 	if n > 0 {
+		tx.Rollback()
 		return ErrSeeded
 	}
-	_, err := db.Exec(fixture)
-	return err
+	if _, err := tx.Exec(fixture); err != nil {
+		tx.Rollback()
+		return err
+	}
+	return tx.Commit()
 }
