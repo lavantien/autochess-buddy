@@ -91,6 +91,8 @@ match (patch, played_at, source pro|me, finalized_at)
 
 Flows: create match shell, add lineups (placement prefills the next free cell), build boards via a free text hero input backed by a datalist (the name must exist in the codex, unknown names get "no hero named x in the codex. add it first."), copy a lineup (clones board and label, takes the next free placement, resets pro and scalars), finalize (pro needs exactly 8 lineups covering 1..8; me needs exactly 1). Finalized matches drop out of the editor and into read only history.
 
+The finalize lock is enforced in the store, not the ui: every lineup, slot, item and relic write resolves its match inside the same tx and refuses with "this match is finalized and can no longer be edited." once the marker is set. Validation and the stamp share one tx (a lineup add cannot slip between the rule check and the marker), and a repeat finalize is idempotent, never moving the stamp. Defense: the editor redirect only hides the forms; a stale tab or a direct post could still reach the store, so the guarantee lives where the writes happen. A board cell raced by two adds maps to friendly copy instead of raw driver error text.
+
 Defense:
 - placement as the unique key: it is the scoreboard identity of an autochess match, so uniqueness is a domain rule, not a db nicety. The friendly conflict copy comes from the service pre-check; the db constraint is the backstop.
 - slots fill the lowest free cell, not append: a deleted hero mid board should not shift everything. Pinned by a property test over random permutations.
