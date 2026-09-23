@@ -83,11 +83,49 @@ func TestMatchList_PatchParamFiltersToPatchMatches(t *testing.T) {
 	unknown := httptest.NewRequest(http.MethodGet, "/matches?patch=9.9", nil)
 	rec = httptest.NewRecorder()
 	h.ServeHTTP(rec, unknown)
-	// Pinned quirk: an unmatched version leaves PatchID at 0, which the store
-	// treats as no filter, so every match stays visible.
+	// An unmatched version filters to nothing: the honest empty copy renders
+	// and no row from any patch sneaks in.
 	ubody := rec.Body.String()
-	if !strings.Contains(ubody, "3/8") || !strings.Contains(ubody, "1/1") {
-		t.Fatalf("unknown patch version must fall back to the unfiltered list, got %s", ubody[:min(500, len(ubody))])
+	if !strings.Contains(ubody, "no matches for this filter.") {
+		t.Fatalf("unknown patch version must render the filtered empty state, got %s", ubody[:min(500, len(ubody))])
+	}
+	if strings.Contains(ubody, "3/8") || strings.Contains(ubody, "1/1") {
+		t.Fatalf("unknown patch version must hide every row, got %s", ubody[:min(500, len(ubody))])
+	}
+}
+
+func TestMatchList_EmptyFilteredCopy(t *testing.T) {
+	h, st, _, _ := newDashTestServer(t)
+	if err := seed.Load(st.DB); err != nil {
+		t.Fatalf("seed: %v", err)
+	}
+	// Guard the premise against seed drift: every seeded me match is final, so
+	// me+draft matches zero rows.
+	mine, err := st.ListMatches(context.Background(), domain.MatchFilter{Source: "me", State: "draft"})
+	if err != nil || len(mine) != 0 {
+		t.Fatalf("seeded me+draft rows = %v, err %v; pick another combination", mine, err)
+	}
+	rec := httptest.NewRecorder()
+	h.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/matches?source=me&state=draft", nil))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d", rec.Code)
+	}
+	body := rec.Body.String()
+	if !strings.Contains(body, "no matches for this filter.") {
+		t.Fatalf("filtered empty state must name the filter, got %s", body[:min(500, len(body))])
+	}
+	if strings.Contains(body, "no matches yet. start one from the game you just finished.") {
+		t.Fatalf("filtered empty state must not use the unfiltered copy, got %s", body[:min(500, len(body))])
+	}
+
+	// Positive control: a filter with rows keeps rendering them.
+	rec = httptest.NewRecorder()
+	h.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/matches?source=me", nil))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d", rec.Code)
+	}
+	if got := rec.Body.String(); !strings.Contains(got, "1/1") {
+		t.Fatalf("source=me must still render its match row, got %s", got[:min(500, len(got))])
 	}
 }
 
@@ -99,9 +137,13 @@ func TestNewMatch_UnknownPatch422RerendersForm(t *testing.T) {
 		t.Fatalf("status = %d, want 422: %s", rec.Code, rec.Body.String())
 	}
 	body := rec.Body.String()
-	// Pinned gap: the patch_id field error is never printed because the form
-	// template only renders st.err("played_at"). What is observable is the
-	// rerender keeping exactly what was typed.
+	// The patch_id field error must print once and focus the select.
+	if want := "pick a patch from the list."; strings.Count(body, want) != 1 {
+		t.Fatalf("patch error must appear exactly once, got body %s", body[:min(400, len(body))])
+	}
+	if !strings.Contains(body, `<select name="patch_id" data-autofocus>`) {
+		t.Fatalf("patch select must carry data-autofocus, got %s", body[:min(400, len(body))])
+	}
 	for _, want := range []string{
 		"<h1>new match</h1>",
 		`value="pro" selected`,
@@ -111,6 +153,31 @@ func TestNewMatch_UnknownPatch422RerendersForm(t *testing.T) {
 		if !strings.Contains(body, want) {
 			t.Fatalf("422 rerender missing %q, got %s", want, body[:min(400, len(body))])
 		}
+	}
+}
+
+func TestNewMatch_BogusSource422NamesSource(t *testing.T) {
+	fx := seedEditor(t)
+	patches, err := fx.st.ListPatches(context.Background())
+	if err != nil || len(patches) == 0 {
+		t.Fatalf("patches: %v", err)
+	}
+	form := "patch_id=" + strconv.FormatInt(patches[0].ID, 10) + "&source=bogus&played_at=2026-09-23T20:15"
+	rec := fx.post(t, http.MethodPost, "/matches/new", form, false)
+	if rec.Code != http.StatusUnprocessableEntity {
+		t.Fatalf("status = %d, want 422: %s", rec.Code, rec.Body.String())
+	}
+	body := rec.Body.String()
+	// The service's source validation must reach its own field, not masquerade
+	// as a patch problem.
+	if want := "source must be me or pro."; strings.Count(body, want) != 1 {
+		t.Fatalf("source error must appear exactly once, got %s", body[:min(400, len(body))])
+	}
+	if strings.Contains(body, "pick a patch from the list.") {
+		t.Fatalf("valid patch must not also flag the patch field, got %s", body[:min(400, len(body))])
+	}
+	if !strings.Contains(body, `<select name="source" data-autofocus>`) {
+		t.Fatalf("source select must carry data-autofocus, got %s", body[:min(400, len(body))])
 	}
 }
 

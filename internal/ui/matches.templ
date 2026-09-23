@@ -42,7 +42,11 @@ templ matchesBody(rows []domain.MatchListRow, f domain.MatchFilter, patches []do
 			<button type="submit" class="button button-quiet">apply</button>
 		</form>
 		if len(rows) == 0 {
-			@EmptyState("no matches yet. start one from the game you just finished.", nil)
+			if f.Source != "" || f.State != "" || f.PatchID != 0 {
+				@EmptyState("no matches for this filter.", nil)
+			} else {
+				@EmptyState("no matches yet. start one from the game you just finished.", nil)
+			}
 		} else {
 			<table>
 				<thead><tr><th>state</th><th>played</th><th>patch</th><th>source</th><th>lineups</th><th>notes</th></tr></thead>
@@ -92,18 +96,24 @@ templ newMatchBody(patches []domain.Patch, st CodexFormState) {
 		<form method="post" action="/matches/new" class="stack codexform">
 			<label>
 				<span>patch</span>
-				<select name="patch_id">
+				<select name="patch_id" data-autofocus?={ st.autofocus("patch_id") }>
 					for _, p := range patches {
 						<option value={ itoa(p.ID) } selected?={ st.val("patch_id", "") == itoa(p.ID) }>{ p.Version }</option>
 					}
 				</select>
+				if msg := st.err("patch_id"); msg != "" {
+					<p class="fielderr">{ msg }</p>
+				}
 			</label>
 			<label>
 				<span>source</span>
-				<select name="source">
+				<select name="source" data-autofocus?={ st.autofocus("source") }>
 					<option value="pro" selected?={ st.val("source", "") == "pro" }>pro</option>
 					<option value="me" selected?={ st.val("source", "") == "me" }>me</option>
 				</select>
+				if msg := st.err("source"); msg != "" {
+					<p class="fielderr">{ msg }</p>
+				}
 			</label>
 			<label>
 				<span>played at</span>

@@ -30,7 +30,10 @@ func (s *Server) itemCreate(w http.ResponseWriter, r *http.Request) {
 	f := parseForm(r)
 	st := formState(r, itemFormKeys...)
 	it := decodeItem(f, r)
-	components := componentIDs(r)
+	components, ok := componentIDs(r)
+	if !ok {
+		st.Errs = append(st.Errs, domain.FieldError{Field: "components", Msg: "pick components from the list."})
+	}
 	if it.Name == "" {
 		st.Errs = append(st.Errs, domain.FieldError{Field: "name", Msg: "name is required."})
 	}
@@ -74,10 +77,15 @@ func (s *Server) itemUpdate(w http.ResponseWriter, r *http.Request) {
 	st := formState(r, itemFormKeys...)
 	it := decodeItem(f, r)
 	it.ID = id
-	components := componentIDs(r)
+	components, ok := componentIDs(r)
 	all := loadList(s.log, r.Context(), "items", s.st.ListItems)
+	if !ok {
+		st.Errs = append(st.Errs, domain.FieldError{Field: "components", Msg: "pick components from the list."})
+	}
 	if it.Name == "" {
 		st.Errs = append(st.Errs, domain.FieldError{Field: "name", Msg: "name is required."})
+	}
+	if len(st.Errs) > 0 {
 		renderPage(s.log, w, r, http.StatusUnprocessableEntity, ui.ItemEditPage(it, all, st, ""))
 		return
 	}
@@ -102,14 +110,17 @@ func (s *Server) itemDelete(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// componentIDs reads the recipe multi-select.
-func componentIDs(r *http.Request) []int64 {
+// componentIDs reads the recipe multi-select; ok is false when any posted value
+// is not a real id, since the select only offers positive ones.
+func componentIDs(r *http.Request) ([]int64, bool) {
 	vals := r.PostForm["components"]
 	ids := make([]int64, 0, len(vals))
 	for _, v := range vals {
-		if id := parseID(v); id != 0 {
-			ids = append(ids, id)
+		id := parseID(v)
+		if id == 0 {
+			return nil, false
 		}
+		ids = append(ids, id)
 	}
-	return ids
+	return ids, true
 }

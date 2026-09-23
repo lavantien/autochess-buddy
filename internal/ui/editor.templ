@@ -194,6 +194,9 @@ templ EditForm(view service.EditorView, l domain.Lineup, st EditFormState, oob b
 		if msg := st.err("placement"); msg != "" {
 			<p class="fielderr">{ msg }</p>
 		}
+		if msg := st.err("record"); msg != "" {
+			<p class="fielderr">{ msg }</p>
+		}
 		<button type="submit" class="button button-primary" hx-disable="this">save lineup</button>
 	</form>
 }
