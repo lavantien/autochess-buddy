@@ -1,6 +1,7 @@
 package httpapi
 
 import (
+	"context"
 	"net/http"
 
 	"github.com/lavantien/autochess-buddy/internal/domain"
@@ -14,7 +15,9 @@ func (s *Server) synergyIndex(w http.ResponseWriter, r *http.Request) {
 		stubPage(s.log, "codex", "races", ui.CodexEmpty("races")).ServeHTTP(w, r)
 		return
 	}
-	classes, _ := s.ladderEntries(r, "classes")
+	classes := loadList(s.log, r.Context(), "classes", func(ctx context.Context) ([]ui.LadderEntry, error) {
+		return s.ladderEntries(r, "classes")
+	})
 	renderPage(s.log, w, r, http.StatusOK, ui.SynergiesPage(races, classes, ui.NewCodexForm()))
 }
 
