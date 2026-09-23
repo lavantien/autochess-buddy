@@ -1,6 +1,7 @@
 package httpapi
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/lavantien/autochess-buddy/internal/domain"
@@ -43,7 +44,7 @@ func (s *Server) itemCreate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if _, err := s.st.CreateItem(r.Context(), it, components); err != nil {
-		st.Errs = append(st.Errs, domain.FieldError{Field: "name", Msg: "that name is taken."})
+		st.Errs = append(st.Errs, itemWriteError(err))
 		items := loadList(s.log, r.Context(), "items", s.st.ListItems)
 		renderPage(s.log, w, r, http.StatusUnprocessableEntity, ui.ItemsPage(items, st))
 		return
@@ -90,7 +91,7 @@ func (s *Server) itemUpdate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := s.st.UpdateItem(r.Context(), it, components); err != nil {
-		st.Errs = append(st.Errs, domain.FieldError{Field: "name", Msg: "that name is taken."})
+		st.Errs = append(st.Errs, itemWriteError(err))
 		renderPage(s.log, w, r, http.StatusUnprocessableEntity, ui.ItemEditPage(it, all, st, ""))
 		return
 	}
@@ -117,10 +118,19 @@ func componentIDs(r *http.Request) ([]int64, bool) {
 	ids := make([]int64, 0, len(vals))
 	for _, v := range vals {
 		id := parseID(v)
-		if id == 0 {
+		if id <= 0 {
 			return nil, false
 		}
 		ids = append(ids, id)
 	}
 	return ids, true
+}
+
+// itemWriteError names the field a refused item write blames: a dangling
+// component id trips the recipe foreign key, anything else is the name.
+func itemWriteError(err error) domain.FieldError {
+	if errors.Is(err, domain.ErrInUse) {
+		return domain.FieldError{Field: "components", Msg: "pick components from the list."}
+	}
+	return domain.FieldError{Field: "name", Msg: "that name is taken."}
 }

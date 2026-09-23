@@ -253,3 +253,85 @@ func TestItemUpdate_GarbageComponent422(t *testing.T) {
 		t.Fatalf("refused update must not touch the row, got %+v err %v", it, err)
 	}
 }
+
+// A negative component id parses but names no real option, so it must land on
+// the components field, not the name-taken copy.
+func TestItemCreate_NegativeComponent422(t *testing.T) {
+	f := seedEditor(t)
+	rec := f.post(t, "POST", "/items", "name=voodoo&tier=2&effect=curse&components=-3", false)
+	if rec.Code != http.StatusUnprocessableEntity {
+		t.Fatalf("negative component status = %d, want 422: %s", rec.Code, truncBody(rec.Body.String()))
+	}
+	body := rec.Body.String()
+	if want := "pick components from the list."; strings.Count(body, want) != 1 {
+		t.Fatalf("components error must appear exactly once, got %s", truncBody(body))
+	}
+	if strings.Contains(body, "that name is taken.") {
+		t.Fatalf("a components problem must not claim the name is taken, got %s", truncBody(body))
+	}
+	if !strings.Contains(body, `value="voodoo"`) {
+		t.Fatalf("rerender must keep the typed name, got %s", truncBody(body))
+	}
+}
+
+// staleComponentId creates three items and deletes the middle one, so its id
+// cannot be recycled by the next insert and stays genuinely missing.
+func staleComponentId(t *testing.T, f editorFixture) int64 {
+	t.Helper()
+	ctx := context.Background()
+	var ids []int64
+	for _, name := range []string{"probe a", "probe b", "probe c"} {
+		id, err := f.st.CreateItem(ctx, domain.Item{Name: name, Tier: 1, Effect: "x"}, nil)
+		if err != nil {
+			t.Fatalf("create %s: %v", name, err)
+		}
+		ids = append(ids, id)
+	}
+	if err := f.st.DeleteItem(ctx, ids[1]); err != nil {
+		t.Fatalf("delete middle item: %v", err)
+	}
+	if _, err := f.st.CreateItem(ctx, domain.Item{Name: "probe d", Tier: 1, Effect: "x"}, nil); err != nil {
+		t.Fatalf("tail item: %v", err)
+	}
+	return ids[1]
+}
+
+// A component id that pointed at a since-deleted item hits the recipe FK; the
+// 422 must name components, on both create and update.
+func TestItemCreate_StaleComponent422(t *testing.T) {
+	f := seedEditor(t)
+	x := staleComponentId(t, f)
+	form := "name=ward&tier=1&effect=guard&components=" + strconv.FormatInt(x, 10)
+	rec := f.post(t, "POST", "/items", form, false)
+	if rec.Code != http.StatusUnprocessableEntity {
+		t.Fatalf("stale component status = %d, want 422: %s", rec.Code, truncBody(rec.Body.String()))
+	}
+	body := rec.Body.String()
+	if want := "pick components from the list."; strings.Count(body, want) != 1 {
+		t.Fatalf("components error must appear exactly once, got %s", truncBody(body))
+	}
+	if strings.Contains(body, "that name is taken.") {
+		t.Fatalf("a stale component must not claim the name is taken, got %s", truncBody(body))
+	}
+}
+
+func TestItemUpdate_StaleComponent422(t *testing.T) {
+	f := seedEditor(t)
+	x := staleComponentId(t, f)
+	path := "/items/" + strconv.FormatInt(f.itemID, 10)
+	form := "name=renamed core&tier=3&effect=zap&components=" + strconv.FormatInt(x, 10)
+	rec := f.post(t, "POST", path, form, false)
+	if rec.Code != http.StatusUnprocessableEntity {
+		t.Fatalf("stale component update status = %d, want 422: %s", rec.Code, truncBody(rec.Body.String()))
+	}
+	body := rec.Body.String()
+	if want := "pick components from the list."; strings.Count(body, want) != 1 {
+		t.Fatalf("components error must appear exactly once, got %s", truncBody(body))
+	}
+	if strings.Contains(body, "that name is taken.") {
+		t.Fatalf("a stale component must not claim the name is taken, got %s", truncBody(body))
+	}
+	if it, _, err := f.st.GetItem(context.Background(), f.itemID); err != nil || it.Name != "storm core" {
+		t.Fatalf("refused update must not touch the row, got %+v err %v", it, err)
+	}
+}
