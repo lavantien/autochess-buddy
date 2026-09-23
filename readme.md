@@ -59,19 +59,20 @@ sequenceDiagram
     participant H as httpapi
     participant S as service
     participant R as sqlite store
-    U->>H: GET /matches/new
-    H->>S: NewMatchForm()
-    S->>R: ListHeroes(), ListPros(), LatestPatch()
-    R-->>S: rows
-    S-->>H: form model
-    H-->>U: templ page, match form + empty lineup cards
-    U->>H: POST /matches (form fields, 8 lineups, slots, items, relics)
-    H->>S: CreateMatch(cmd)
-    S->>S: domain validation (slot cap, stars, item cap, placement)
-    S->>R: one tx: match, lineups, slots, slot_items, lineup_relics
-    R-->>S: ids
-    S-->>H: created match
-    H-->>U: htmx swap to match detail
+    U->>H: POST /matches (patch, source)
+    H->>S: CreateMatchShell(cmd)
+    S->>R: insert draft match
+    H-->>U: redirect to /matches/{id}/edit
+    U->>H: POST /matches/{id}/lineups (one card form: placement, label, wdl, networth, hero rows, items, relics)
+    H->>S: AddLineup(cmd)
+    S->>S: domain validation (slot cap, stars, item cap)
+    S->>R: insert lineup + slots + slot_items + lineup_relics
+    H-->>U: htmx swap, lineup card appended, n/8 badge updates
+    U->>H: POST /matches/{id}/finalize
+    H->>S: FinalizeMatch(id)
+    S->>S: exactly 8 distinct placements (pro) or 1 lineup (me)
+    S->>R: one tx: mark finalized
+    H-->>U: redirect to match detail
 ```
 
 analytics read:
@@ -96,7 +97,7 @@ bottom-up, each layer only talks to the layer directly below, max 400 sloc per f
 
 #### layer 0: data
 
-- data/app.db, sqlite, journal_mode=TRUNCATE (no wal), committed to git. no sidecar files exist; commit the db while the app is closed or idle, and a git pre-commit hook rejects a stray app.db-journal.
+- data/app.db, sqlite, journal_mode=TRUNCATE (no wal), committed to git. journal mode is per connection, so the pool opener sets the pragma on every conn. no sidecar files exist; commit the db while the app is closed or idle, and a git pre-commit hook rejects a stray app.db-journal.
 - migrations are embedded numbered .sql files applied automatically at boot, one tx each (goose v3, programmatic only). no manual migration steps ever, and the app has no docker services at all.
 
 ```sql
@@ -129,7 +130,7 @@ CREATE TABLE hero_classes (
   PRIMARY KEY (hero_id, class_id));
 CREATE TABLE items (
   id INTEGER PRIMARY KEY, name TEXT NOT NULL UNIQUE,
-  tier INTEGER NOT NULL CHECK (tier BETWEEN 1 AND 5),
+  tier INTEGER NOT NULL,
   effect TEXT NOT NULL DEFAULT '');
 CREATE TABLE item_recipes (
   result_id INTEGER NOT NULL REFERENCES items(id),
@@ -144,9 +145,10 @@ CREATE TABLE pros (
 CREATE TABLE matches (
   id INTEGER PRIMARY KEY,
   patch_id INTEGER NOT NULL REFERENCES patches(id),
-  played_at TEXT NOT NULL,
+  played_at INTEGER NOT NULL,
   source TEXT NOT NULL CHECK (source IN ('me','pro')),
-  notes TEXT NOT NULL DEFAULT '');
+  notes TEXT NOT NULL DEFAULT '',
+  created_at INTEGER NOT NULL);
 CREATE TABLE lineups (
   id INTEGER PRIMARY KEY,
   match_id INTEGER NOT NULL REFERENCES matches(id) ON DELETE CASCADE,
@@ -155,6 +157,7 @@ CREATE TABLE lineups (
   placement INTEGER NOT NULL CHECK (placement BETWEEN 1 AND 8),
   wins INTEGER NOT NULL DEFAULT 0, draws INTEGER NOT NULL DEFAULT 0,
   losses INTEGER NOT NULL DEFAULT 0, networth INTEGER NOT NULL DEFAULT 0,
+  created_at INTEGER NOT NULL,
   UNIQUE (match_id, placement));
 CREATE TABLE lineup_slots (
   id INTEGER PRIMARY KEY,
@@ -171,32 +174,37 @@ CREATE TABLE lineup_relics (
   relic_id INTEGER NOT NULL REFERENCES relics(id),
   PRIMARY KEY (lineup_id, relic_id));
 CREATE INDEX idx_slots_lineup ON lineup_slots(lineup_id);
+CREATE INDEX idx_slots_hero ON lineup_slots(hero_id);
 CREATE INDEX idx_lineups_match ON lineups(match_id);
+CREATE INDEX idx_slot_items_item ON slot_items(item_id);
 CREATE INDEX idx_hero_races_race ON hero_races(race_id);
 CREATE INDEX idx_hero_classes_class ON hero_classes(class_id);
 ```
 
-notes: heroes carry 1 to 2 races and 1 to 2 classes through the junction tables because multi lineage pieces exist and the codex is hand-entered and evolving; synergy queries run uniformly over both junctions. pro identity sits on the lineup, not the match, because several tracked pros can share one lobby. duplicate heroes on one board are legal so there is no unique on (lineup, hero), and slot_items has no position or primary key so the same item can stack. slot cap 12, items per slot cap, pro match has exactly 8 lineups, my match has 1: these are domain rules in layer 1, the schema only carries sanity checks.
+notes: timestamps are utc unixepoch integer seconds. heroes carry 1 to 2 races and 1 to 2 classes through the junction tables because multi lineage pieces exist and the codex is hand-entered and evolving; synergy queries run uniformly over both junctions. pro identity sits on the lineup, not the match, because several tracked pros can share one lobby. duplicate heroes on one board are legal so there is no unique on (lineup, hero), and slot_items has no position or primary key so the same item can stack. slot cap 12, items per slot cap, pro match has exactly 8 lineups, my match has 1: these are domain rules in layer 1, the schema only carries sanity checks for stable invariants (cost, stars, placement).
 
 duckdb read contract: journal_mode=TRUNCATE keeps the main file self-consistent after every write, so duckdb attaches data/app.db read only (`ATTACH 'data/app.db' AS ac (TYPE SQLITE, READ_ONLY)`) and simply always reads current committed state. no wal, no checkpoint dance, no staleness window.
 
 #### layer 1: domain
 
-pure go types mirroring the tables plus all validation: slot cap 12, star range 1 to 3, item cap per slot, placement range 1 to 8, distinct placements within a match, lineup count per match source (1 for me, 8 for pro), hero carries 1 to 2 races and 1 to 2 classes, played_at parsing. stdlib imports only. this is where property tests live. no sql, no http.
+pure go types mirroring the tables plus all validation: slot cap 12, star range 1 to 3, item cap per slot (default 6, verify in game), placement range 1 to 8, distinct placements within a match, hero carries 1 to 2 races and 1 to 2 classes, played_at utc unixepoch parsing. drafts rest with any lineup count, finalize enforces the source rule: 1 lineup for my matches, exactly 8 with distinct placements 1 to 8 for pro matches. stdlib imports only. this is where property tests live. no sql, no http.
 
 #### layer 2: stores
 
-small interfaces per aggregate, sqlite implementations with database/sql and mattn/go-sqlite3:
+concrete sqlite types with database/sql and mattn/go-sqlite3, no interface ceremony until a second implementation exists:
 
-- CodexStore: races, classes, heroes, items, relics, patches, pros crud
-- MatchStore: matches with nested lineups, slots, slot_items, lineup_relics, written in one tx
+- Codex: races, classes, heroes, items, relics, patches, pros crud, called directly by handlers
+- MatchStore: draft shell, lineups, slots, slot_items, lineup_relics, finalize, written in one tx
 - helpers: WithTx, migration runner bootstrap
+- store tests run against real sqlite files in t.TempDir, never :memory:, so journal mode and locking behave as production
 
 #### layer 3: services
 
-- codex service: validate then mutate, list with ordering
-- entry service: match wizard, lineup editor operations (add slot, attach item, attach relic)
-- analytics service: apply filters (patch, source), run catalogue queries, map rows to view models. all math stays in sql, go only assembles.
+thin, only where more than a single store call happens:
+
+- entry service: create shell match, append lineup cards one form at a time, finalize enforces the source lineup counts and distinct placements in one tx
+- analytics orchestration: apply filters (patch, source), run catalogue queries, map rows to view models. all math stays in sql, go only assembles
+- codex crud goes handler to store directly, no pass-through service
 
 #### layer 4: http
 
@@ -206,10 +214,12 @@ net/http with go 1.27 method patterns, html only. hx-request header present mean
 |---|---|---|
 | GET | / | dashboard landing |
 | GET/POST | /heroes, /heroes/{id} | codex crud (same pattern for races, classes, items, relics, patches, pros) |
-| GET | /matches | list, filters |
-| GET/POST | /matches/new | entry wizard |
-| GET | /matches/{id} | detail + lineup editor |
-| POST | /matches/{id}/lineups | add lineup |
+| GET | /matches | list, filters, n/8 draft badge |
+| GET/POST | /matches/new | create shell, redirect to edit |
+| GET | /matches/{id} | detail |
+| GET | /matches/{id}/edit | lineup editor |
+| POST | /matches/{id}/lineups | add one lineup card |
+| POST | /matches/{id}/finalize | lock counts and placements |
 | POST | /lineups/{id}/slots | add hero slot |
 | POST | /slots/{id}/items | attach item |
 | POST | /lineups/{id}/relics | attach relic |
@@ -221,11 +231,11 @@ net/http with go 1.27 method patterns, html only. hx-request header present mean
 
 #### layer 5: ui
 
-templ base layout, page templates, small components in internal/ui. htmx 4.0.0 vendored as a static file since npm latest still points at 2.x. one hand written dark stylesheet, tables and forms only. hero picker is a select with datalist search, no client js beyond htmx. deletes use hx-delete with hx-confirm.
+templ base layout, page templates, small components in internal/ui. htmx 4.0.0 vendored as a static file since npm latest still points at 2.x. one hand written dark stylesheet, tables and forms only. lineup entry is incremental: each lineup card is its own small form so placement conflicts surface per card through the unique constraint and no 100-field atomic submit exists, a duplicate-lineup button copies the previous card since adjacent placements share most pieces, match lists show n/8 so partial entry is a resting state, stars default to 2. hero picker is a select with datalist search, no per-keystroke server calls, no client js beyond htmx. deletes use hx-delete with hx-confirm.
 
 #### layer 6: analytics
 
-duckdb via github.com/duckdb/duckdb-go (new home since v2.5.0, marcboeker is archived), opened at boot with extension autoload enabled and the read-only attach from layer 0. the query catalogue is embedded .sql files with named filter params. the whole engine hides behind the analytics service interface: the data volume is small enough that plain sqlite group-bys would compute these metrics too, duckdb is in the stack by mandate, and the interface keeps a future swap to sqlite-only a one-layer change. metrics:
+duckdb via github.com/duckdb/duckdb-go (new home since v2.5.0, marcboeker is archived), pinned. boot installs and loads the sqlite extension explicitly and fails fast with a clear offline message instead of a mid-request error, since the first run needs network to fetch the extension. the read-only attach comes from layer 0. rollback mode lets a duckdb shared read block go writes, so every analytics batch runs behind one mutex shared with the write path, and sqlite conns set busy_timeout. the query catalogue is embedded .sql files with named filter params. the whole engine hides behind the analytics service interface: the data volume is small enough that plain sqlite group-bys would compute these metrics too, duckdb is in the stack by mandate, and the interface keeps a future swap to sqlite-only a one-layer change. metrics:
 
 - pick rate: lineups containing the hero over all lineups, patch filtered
 - top4 rate: placement <= 4 as the win proxy, always shown with the wilson 95 percent lower bound
@@ -242,19 +252,20 @@ taskfile targets: dev (templ generate --watch plus go run), test (unit + propert
 #### layer 8: testing and parallel development
 
 - unit: table driven per layer, domain is the heaviest
-- property: pgregory.net/rapid, lineup invariants, form decode round trips
+- property: pgregory.net/rapid, synergy counts invariant under slot permutation, wilson lower bound monotone in n, lift falls back to the patch field average when a slice is empty, form decode round trips
 - store tests: temp file sqlite with real migrations, crud round trips, tx atomicity, cascade deletes
-- analytics tests: seeded sqlite fixture attached in duckdb, golden expected numbers, plus a write-then-read test proving duckdb sees committed sqlite state
-- e2e: playwright-go headless chromium against fake seed data: create hero, enter a pro match with 8 full lineups, dashboard renders computed numbers
+- one shared sql fixture seed feeds both analytics golden tests and e2e fakes
+- analytics tests: the shared fixture attached in duckdb, golden expected numbers, plus a write-then-read test proving duckdb sees committed sqlite state
+- e2e: playwright-go headless chromium against the shared fixture, 4 flows: create codex hero, enter a full pro match through the lineup editor, dashboard renders computed numbers, edit and delete
 - verification chain per commit: feature tests, fmt, lint, vet, full unit suite, e2e, then 2 independent adversarial review agents, fix confirmed findings, re-run
 
 dev dag, max 4 concurrent agents:
 
 ```mermaid
 flowchart TD
-    A[domain + migrations] --> B[sqlite stores]
-    A --> C[ui shell + http skeleton on fakes]
-    A --> D[analytics]
+    A[scaffold + domain + migrations + shared seed fixture] --> B[sqlite stores]
+    A --> C[ui shell + http skeleton]
+    A --> D[analytics on the shared fixture]
     B --> E[services + handlers wiring]
     C --> E
     E --> F[e2e + adversarial review]
@@ -271,4 +282,4 @@ game window capture (ocr or memory reading), auth and multi user, hosting, per p
 - duckdb sqlite extension downloads on first attach: accept one time download, or vendor the extension binary later
 - cgo on windows needs a c compiler: prerequisite documented (w64devkit or msys2)
 - committed sqlite binary churn: commit while the app is closed or idle, pre-commit hook guards a stray journal, binary diff noise is accepted
-- concurrent file access: a sqlite write during a live duckdb scan could tear the read on windows; analytics batches are short and user-triggered, and the analytics tests write-then-read to catch it if it ever surfaces
+- concurrent file access: rollback mode lets a duckdb read and a go write fight over locks; every analytics batch runs behind the shared mutex from layer 6, and the analytics tests write-then-read to catch it if it ever surfaces
