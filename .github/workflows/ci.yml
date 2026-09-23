@@ -1,0 +1,44 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+          cache: true
+      - run: make badge
+      - name: publish coverage badge
+        # always(): publish the truthful coverage color even when the gate
+        # fails; default-token pushes trigger no further workflow runs.
+        if: always() && hashFiles('coverage.json') != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          dir="$(mktemp -d)"
+          cp coverage.json "$dir"
+          cd "$dir"
+          git init -q -b badges
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git remote add origin "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          git add coverage.json
+          git commit -qm "coverage badge"
+          git push -qf origin badges
