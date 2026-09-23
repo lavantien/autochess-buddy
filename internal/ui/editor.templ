@@ -47,7 +47,7 @@ templ CardsRegion(view service.EditorView, addState AddFormState, oob bool) {
 		}
 	>
 		for _, l := range view.Lineups {
-			@LineupCard(view, l, EditFormState{Placement: itoa(int64(l.Placement)), ProID: proIDText(l), Label: l.Label, Wins: itoa(int64(l.Wins)), Draws: itoa(int64(l.Draws)), Losses: itoa(int64(l.Losses)), Networth: itoa(int64(l.Networth))}, HeroFormState{Reset: true}, SlotFormState{}, RelicState{}, "")
+			@LineupCard(view, l, EditFormState{Placement: itoa(int64(l.Placement)), ProID: proIDText(l), Label: l.Label, Wins: itoa(int64(l.Wins)), Draws: itoa(int64(l.Draws)), Losses: itoa(int64(l.Losses)), Networth: itoa(int64(l.Networth))}, HeroFormState{Reset: true}, SlotFormState{}, RelicState{}, "", false)
 		}
 		@AddForm(view, addState, false)
 	</div>
@@ -67,14 +67,14 @@ templ AddForm(view service.EditorView, st AddFormState, oob bool) {
 		<h2>add lineup</h2>
 		<label>
 			<span>placement</span>
-			<input type="number" name="placement" min="1" max="8" value={ st.Placement } data-autofocus={ st.firstErrField() == "placement" || st.firstErrField() == "" }/>
+			<input type="number" name="placement" min="1" max="8" value={ st.Placement } data-autofocus?={ st.firstErrField() == "placement" || st.firstErrField() == "" }/>
 		</label>
 		<label>
 			<span>pro</span>
 			<select name="pro">
-				<option value="" selected={ st.ProID == "" }>none</option>
+				<option value="" selected?={ st.ProID == "" }>none</option>
 				for _, p := range view.Pros {
-					<option value={ itoa(p.ID) } selected={ st.ProID == itoa(p.ID) }>{ p.Name }</option>
+					<option value={ itoa(p.ID) } selected?={ st.ProID == itoa(p.ID) }>{ p.Name }</option>
 				}
 			</select>
 		</label>
@@ -98,8 +98,14 @@ templ AddForm(view service.EditorView, st AddFormState, oob bool) {
 	</form>
 }
 
-templ LineupCard(view service.EditorView, l domain.Lineup, editState EditFormState, heroState HeroFormState, slotState SlotFormState, relicState RelicState, copyErr string) {
-	<article id={ "card-" + itoa(l.ID) } class="lcard">
+templ LineupCard(view service.EditorView, l domain.Lineup, editState EditFormState, heroState HeroFormState, slotState SlotFormState, relicState RelicState, copyErr string, oob bool) {
+	<article
+		id={ "card-" + itoa(l.ID) }
+		class="lcard"
+		if oob {
+			hx-swap-oob="outerHTML"
+		}
+	>
 		<header class="lcard-head">
 			@PlacementNumeral(l.Placement)
 			<span class="who">{ displayName(view, l) }</span>
@@ -164,14 +170,14 @@ templ EditForm(view service.EditorView, l domain.Lineup, st EditFormState, oob b
 		<input type="hidden" name="match_id" value={ itoa(view.Match.ID) }/>
 		<label>
 			<span>placement</span>
-			<input type="number" name="placement" min="1" max="8" value={ st.Placement } data-autofocus={ st.firstErrField() == "placement" }/>
+			<input type="number" name="placement" min="1" max="8" value={ st.Placement } data-autofocus?={ st.firstErrField() == "placement" }/>
 		</label>
 		<label>
 			<span>pro</span>
 			<select name="pro">
-				<option value="" selected={ st.ProID == "" }>none</option>
+				<option value="" selected?={ st.ProID == "" }>none</option>
 				for _, p := range view.Pros {
-					<option value={ itoa(p.ID) } selected={ st.ProID == itoa(p.ID) }>{ p.Name }</option>
+					<option value={ itoa(p.ID) } selected?={ st.ProID == itoa(p.ID) }>{ p.Name }</option>
 				}
 			</select>
 		</label>
@@ -220,7 +226,7 @@ templ SlotCell(view service.EditorView, l domain.Lineup, sl domain.Slot, st Slot
 				@Chip(it.Name, removeItemForm(view, l.ID, sl.ID, it.ID))
 			}
 		</div>
-		<details class="disclosure" open={ st.OpenSlotID == sl.ID }>
+		<details class="disclosure" open?={ st.OpenSlotID == sl.ID }>
 			<summary>slot details</summary>
 			<form
 				class="stack"
@@ -231,9 +237,9 @@ templ SlotCell(view service.EditorView, l domain.Lineup, sl domain.Slot, st Slot
 				<input type="hidden" name="match_id" value={ itoa(view.Match.ID) }/>
 				<label>
 					<span>stars</span>
-					<select name="stars" data-autofocus={ st.BadSlotID == sl.ID && st.BadField == "stars" }>
+					<select name="stars" data-autofocus?={ st.BadSlotID == sl.ID && st.BadField == "stars" }>
 						for s := 1; s <= 3; s++ {
-							<option value={ itoa(int64(s)) } selected={ s == sl.Stars }>{ s }</option>
+							<option value={ itoa(int64(s)) } selected?={ s == sl.Stars }>{ s }</option>
 						}
 					</select>
 				</label>
@@ -251,7 +257,7 @@ templ SlotCell(view service.EditorView, l domain.Lineup, sl domain.Slot, st Slot
 				<input type="hidden" name="match_id" value={ itoa(view.Match.ID) }/>
 				<label>
 					<span>item</span>
-					<select name="item" data-autofocus={ st.BadSlotID == sl.ID && st.BadField == "item" }>
+					<select name="item" data-autofocus?={ st.BadSlotID == sl.ID && st.BadField == "item" }>
 						for _, it := range view.Items {
 							<option value={ itoa(it.ID) }>{ it.Name }</option>
 						}
@@ -261,6 +267,16 @@ templ SlotCell(view service.EditorView, l domain.Lineup, sl domain.Slot, st Slot
 				if st.BadSlotID == sl.ID && st.BadField == "item" {
 					<p class="fielderr">{ st.BadMsg }</p>
 				}
+			</form>
+			<form
+				class="inline-form"
+				hx-delete={ "/slots/" + itoa(sl.ID) + "?match_id=" + itoa(view.Match.ID) }
+				hx-swap="none"
+				hx-confirm="remove this hero from the lineup?"
+				hx-sync="this:abort"
+				hx-on:htmx:before:swap="window.__acNext=this.closest('.grid').querySelector('button, input, select, summary')"
+			>
+				<button type="submit" class="button button-destructive" hx-disable="this">delete</button>
 			</form>
 		</details>
 	</div>
@@ -295,7 +311,7 @@ templ HeroForm(view service.EditorView, l domain.Lineup, st HeroFormState, oob b
 			list={ "herolist-" + itoa(l.ID) }
 			placeholder="type a hero name"
 			value={ st.Hero }
-			data-autofocus={ st.Reset || st.Err != "" }
+			data-autofocus?={ st.Reset || st.Err != "" }
 			autocomplete="off"
 		/>
 		<datalist id={ "herolist-" + itoa(l.ID) }>
@@ -307,7 +323,7 @@ templ HeroForm(view service.EditorView, l domain.Lineup, st HeroFormState, oob b
 			<span>stars</span>
 			<select name="stars">
 				for s := 1; s <= 3; s++ {
-					<option value={ itoa(int64(s)) } selected={ (st.Stars == "" && s == 2) || st.Stars == itoa(int64(s)) }>{ s }</option>
+					<option value={ itoa(int64(s)) } selected?={ (st.Stars == "" && s == 2) || st.Stars == itoa(int64(s)) }>{ s }</option>
 				}
 			</select>
 		</label>
@@ -332,7 +348,7 @@ templ RelicsRegion(view service.EditorView, l domain.Lineup, st RelicState, oob 
 				@Chip(r.Name, removeRelicForm(view, l.ID, r.ID))
 			}
 		</div>
-		<details class="disclosure" open={ st.Open }>
+		<details class="disclosure" open?={ st.Open }>
 			<summary>add relic</summary>
 			<form
 				class="stack"
@@ -343,7 +359,7 @@ templ RelicsRegion(view service.EditorView, l domain.Lineup, st RelicState, oob 
 				<input type="hidden" name="match_id" value={ itoa(view.Match.ID) }/>
 				<label>
 					<span>relic</span>
-					<select name="relic" data-autofocus={ st.Err != "" }>
+					<select name="relic" data-autofocus?={ st.Err != "" }>
 						for _, r := range view.Relics {
 							<option value={ itoa(r.ID) }>{ r.Name }</option>
 						}

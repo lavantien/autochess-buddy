@@ -25,7 +25,7 @@ templ dashBody(view string, patches []domain.Patch, patchVersion string, f analy
 				>
 					<option value="">all</option>
 					for _, p := range patches {
-						<option value={ p.Version } selected={ patchVersion == p.Version }>{ p.Version }</option>
+						<option value={ p.Version } selected?={ patchVersion == p.Version }>{ p.Version }</option>
 					}
 				</select>
 			</label>
@@ -40,11 +40,11 @@ templ dashBody(view string, patches []domain.Patch, patchVersion string, f analy
 					hx-trigger="change"
 				>
 					<option value="">all</option>
-					<option value="pro" selected={ f.Source == "pro" }>pro</option>
-					<option value="me" selected={ f.Source == "me" }>me</option>
+					<option value="pro" selected?={ f.Source == "pro" }>pro</option>
+					<option value="me" selected?={ f.Source == "me" }>me</option>
 				</select>
 			</label>
-			<span class="viewn">{ n } lineups in view</span>
+			@DashCount(n, false)
 		</form>
 		<nav class="tabs" aria-label="dashboard">
 			for _, v := range dashViews {
@@ -54,6 +54,20 @@ templ dashBody(view string, patches []domain.Patch, patchVersion string, f analy
 		@MetricLegend()
 		@panel
 	</section>
+}
+
+// DashCount is the lineups-in-view counter, oob-refreshed with every panel swap
+// so partial responses keep the filter row honest.
+templ DashCount(n int, oob bool) {
+	<span
+		id="dashcount"
+		class="viewn"
+		if oob {
+			hx-swap-oob="outerHTML"
+		}
+	>
+		{ n } lineups in view
+	</span>
 }
 
 // DashPanel wraps one view's table in the stable swap target.

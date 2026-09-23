@@ -39,7 +39,7 @@ func resetEditState(l *domain.Lineup) ui.EditFormState {
 // cardFragment renders one lineup card in its resting state, for swaps that
 // replace a single card.
 func cardFragment(view service.EditorView, l *domain.Lineup) templ.Component {
-	return ui.LineupCard(view, *l, resetEditState(l), ui.HeroFormState{Reset: true}, ui.SlotFormState{}, ui.RelicState{}, "")
+	return ui.LineupCard(view, *l, resetEditState(l), ui.HeroFormState{Reset: true}, ui.SlotFormState{}, ui.RelicState{}, "", true)
 }
 
 // addLineup adds or copies a lineup card and answers with cards + pips per the
@@ -104,7 +104,7 @@ func (s *Server) lineupFormError(w http.ResponseWriter, r *http.Request, matchID
 		// Field-less copy form: the error renders inline beside the button.
 		if l := lineupByID(view, copyFrom); l != nil {
 			renderOOB(s.log, w, r, http.StatusUnprocessableEntity,
-				ui.LineupCard(view, *l, resetEditState(l), ui.HeroFormState{Reset: true}, ui.SlotFormState{}, ui.RelicState{}, err.Error()))
+				ui.LineupCard(view, *l, resetEditState(l), ui.HeroFormState{Reset: true}, ui.SlotFormState{}, ui.RelicState{}, err.Error(), true))
 			return
 		}
 	}

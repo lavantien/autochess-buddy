@@ -22,7 +22,7 @@ templ matchesBody(rows []sqlite.MatchListRow, f sqlite.MatchFilter, patches []do
 				<select name="patch">
 					<option value="">all</option>
 					for _, p := range patches {
-						<option value={ p.Version } selected={ f.PatchID == p.ID }>{ p.Version }</option>
+						<option value={ p.Version } selected?={ f.PatchID == p.ID }>{ p.Version }</option>
 					}
 				</select>
 			</label>
@@ -30,16 +30,16 @@ templ matchesBody(rows []sqlite.MatchListRow, f sqlite.MatchFilter, patches []do
 				<span>source</span>
 				<select name="source">
 					<option value="">all</option>
-					<option value="pro" selected={ f.Source == "pro" }>pro</option>
-					<option value="me" selected={ f.Source == "me" }>me</option>
+					<option value="pro" selected?={ f.Source == "pro" }>pro</option>
+					<option value="me" selected?={ f.Source == "me" }>me</option>
 				</select>
 			</label>
 			<label>
 				<span>state</span>
 				<select name="state">
 					<option value="">all</option>
-					<option value="draft" selected={ f.State == "draft" }>draft</option>
-					<option value="final" selected={ f.State == "final" }>final</option>
+					<option value="draft" selected?={ f.State == "draft" }>draft</option>
+					<option value="final" selected?={ f.State == "final" }>final</option>
 				</select>
 			</label>
 			<button type="submit" class="button button-quiet">apply</button>
@@ -97,20 +97,20 @@ templ newMatchBody(patches []domain.Patch, st CodexFormState) {
 				<span>patch</span>
 				<select name="patch_id">
 					for _, p := range patches {
-						<option value={ itoa(p.ID) } selected={ st.val("patch_id", "") == itoa(p.ID) }>{ p.Version }</option>
+						<option value={ itoa(p.ID) } selected?={ st.val("patch_id", "") == itoa(p.ID) }>{ p.Version }</option>
 					}
 				</select>
 			</label>
 			<label>
 				<span>source</span>
 				<select name="source">
-					<option value="pro" selected={ st.val("source", "") == "pro" }>pro</option>
-					<option value="me" selected={ st.val("source", "") == "me" }>me</option>
+					<option value="pro" selected?={ st.val("source", "") == "pro" }>pro</option>
+					<option value="me" selected?={ st.val("source", "") == "me" }>me</option>
 				</select>
 			</label>
 			<label>
 				<span>played at</span>
-				<input type="datetime-local" name="played_at" value={ st.val("played_at", "") } data-autofocus={ st.autofocus("played_at") }/>
+				<input type="datetime-local" name="played_at" value={ st.val("played_at", "") } data-autofocus?={ st.autofocus("played_at") }/>
 				if msg := st.err("played_at"); msg != "" {
 					<p class="fielderr">{ msg }</p>
 				}

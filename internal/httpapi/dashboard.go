@@ -24,7 +24,7 @@ func (s *Server) dashView(view string) http.HandlerFunc {
 		}
 		patches, _ := s.st.ListPatches(r.Context())
 		if isHX(r) {
-			renderOOB(s.log, w, r, http.StatusOK, ui.DashPanel(view, panel))
+			renderOOB(s.log, w, r, http.StatusOK, ui.DashPanel(view, panel), ui.DashCount(n, true))
 			return
 		}
 		renderPage(s.log, w, r, http.StatusOK, ui.DashboardPage(view, patches, patchVersion, f, ui.DashPanel(view, panel), n))

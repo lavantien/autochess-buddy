@@ -57,14 +57,14 @@ templ HeroFields(races []domain.Race, classes []domain.Class, st CodexFormState,
 	<form method="post" action={ heroAction(id) } class="stack codexform">
 		<label>
 			<span>name</span>
-			<input type="text" name="name" value={ st.val("name", "") } data-autofocus={ st.autofocus("name") }/>
+			<input type="text" name="name" value={ st.val("name", "") } data-autofocus?={ st.autofocus("name") }/>
 			if msg := st.err("name"); msg != "" {
 				<p class="fielderr">{ msg }</p>
 			}
 		</label>
 		<label>
 			<span>cost</span>
-			<input type="number" name="cost" min="1" max="5" value={ st.val("cost", "1") } data-autofocus={ st.autofocus("cost") }/>
+			<input type="number" name="cost" min="1" max="5" value={ st.val("cost", "1") } data-autofocus?={ st.autofocus("cost") }/>
 			if msg := st.err("cost"); msg != "" {
 				<p class="fielderr">{ msg }</p>
 			}
@@ -74,7 +74,7 @@ templ HeroFields(races []domain.Race, classes []domain.Class, st CodexFormState,
 			<select name="race1">
 				<option value="">none</option>
 				for _, rc := range races {
-					<option value={ itoa(rc.ID) } selected={ st.val("race1", "") == itoa(rc.ID) }>{ rc.Name }</option>
+					<option value={ itoa(rc.ID) } selected?={ st.val("race1", "") == itoa(rc.ID) }>{ rc.Name }</option>
 				}
 			</select>
 		</label>
@@ -83,7 +83,7 @@ templ HeroFields(races []domain.Race, classes []domain.Class, st CodexFormState,
 			<select name="race2">
 				<option value="">none</option>
 				for _, rc := range races {
-					<option value={ itoa(rc.ID) } selected={ st.val("race2", "") == itoa(rc.ID) }>{ rc.Name }</option>
+					<option value={ itoa(rc.ID) } selected?={ st.val("race2", "") == itoa(rc.ID) }>{ rc.Name }</option>
 				}
 			</select>
 		</label>
@@ -92,7 +92,7 @@ templ HeroFields(races []domain.Race, classes []domain.Class, st CodexFormState,
 			<select name="class1">
 				<option value="">none</option>
 				for _, cl := range classes {
-					<option value={ itoa(cl.ID) } selected={ st.val("class1", "") == itoa(cl.ID) }>{ cl.Name }</option>
+					<option value={ itoa(cl.ID) } selected?={ st.val("class1", "") == itoa(cl.ID) }>{ cl.Name }</option>
 				}
 			</select>
 		</label>
@@ -101,7 +101,7 @@ templ HeroFields(races []domain.Race, classes []domain.Class, st CodexFormState,
 			<select name="class2">
 				<option value="">none</option>
 				for _, cl := range classes {
-					<option value={ itoa(cl.ID) } selected={ st.val("class2", "") == itoa(cl.ID) }>{ cl.Name }</option>
+					<option value={ itoa(cl.ID) } selected?={ st.val("class2", "") == itoa(cl.ID) }>{ cl.Name }</option>
 				}
 			</select>
 		</label>
@@ -168,7 +168,7 @@ templ ItemForm(all []domain.Item, st CodexFormState, id int64, submit string) {
 	<form method="post" action={ itemAction(id) } class="stack codexform">
 		<label>
 			<span>name</span>
-			<input type="text" name="name" value={ st.val("name", "") } data-autofocus={ st.autofocus("name") }/>
+			<input type="text" name="name" value={ st.val("name", "") } data-autofocus?={ st.autofocus("name") }/>
 			if msg := st.err("name"); msg != "" {
 				<p class="fielderr">{ msg }</p>
 			}
@@ -185,7 +185,7 @@ templ ItemForm(all []domain.Item, st CodexFormState, id int64, submit string) {
 			<span>components</span>
 			<select name="components" multiple size="4">
 				for _, opt := range all {
-					<option value={ itoa(opt.ID) } selected={ st.hasComponent(opt.ID) }>{ opt.Name }</option>
+					<option value={ itoa(opt.ID) } selected?={ st.hasComponent(opt.ID) }>{ opt.Name }</option>
 				}
 			</select>
 		</label>
@@ -215,7 +215,7 @@ templ relicForm(st CodexFormState, id int64) {
 	<form method="post" action={ plainAction("relics", id) } class="stack codexform">
 		<label>
 			<span>name</span>
-			<input type="text" name="name" value={ st.val("name", "") } data-autofocus={ st.autofocus("name") }/>
+			<input type="text" name="name" value={ st.val("name", "") } data-autofocus?={ st.autofocus("name") }/>
 			if msg := st.err("name"); msg != "" {
 				<p class="fielderr">{ msg }</p>
 			}
@@ -249,7 +249,7 @@ templ patchForm(st CodexFormState, id int64) {
 	<form method="post" action={ plainAction("patches", id) } class="stack codexform">
 		<label>
 			<span>version</span>
-			<input type="text" name="version" value={ st.val("version", "") } data-autofocus={ st.autofocus("version") }/>
+			<input type="text" name="version" value={ st.val("version", "") } data-autofocus?={ st.autofocus("version") }/>
 			if msg := st.err("version"); msg != "" {
 				<p class="fielderr">{ msg }</p>
 			}
@@ -283,7 +283,7 @@ templ proForm(st CodexFormState, id int64) {
 	<form method="post" action={ plainAction("pros", id) } class="stack codexform">
 		<label>
 			<span>name</span>
-			<input type="text" name="name" value={ st.val("name", "") } data-autofocus={ st.autofocus("name") }/>
+			<input type="text" name="name" value={ st.val("name", "") } data-autofocus?={ st.autofocus("name") }/>
 			if msg := st.err("name"); msg != "" {
 				<p class="fielderr">{ msg }</p>
 			}
@@ -355,7 +355,7 @@ templ synergiesBody(races, classes []LadderEntry, st CodexFormState) {
 			<details class="disclosure">
 				<summary>+ new race</summary>
 				<form method="post" action="/races" class="stack codexform">
-					<label><span>name</span><input type="text" name="name" data-autofocus={ st.autofocus("race-name") }/></label>
+					<label><span>name</span><input type="text" name="name" data-autofocus?={ st.autofocus("race-name") }/></label>
 					<button type="submit" class="button button-primary">save race</button>
 				</form>
 			</details>
@@ -371,7 +371,7 @@ templ synergiesBody(races, classes []LadderEntry, st CodexFormState) {
 			<details class="disclosure">
 				<summary>+ new class</summary>
 				<form method="post" action="/classes" class="stack codexform">
-					<label><span>name</span><input type="text" name="name" data-autofocus={ st.autofocus("class-name") }/></label>
+					<label><span>name</span><input type="text" name="name" data-autofocus?={ st.autofocus("class-name") }/></label>
 					<button type="submit" class="button button-primary">save class</button>
 				</form>
 			</details>
