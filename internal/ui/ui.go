@@ -66,12 +66,18 @@ func spreadTier(place int) string {
 	}
 }
 
+var codexSingular = map[string]string{
+	"heroes":  "hero",
+	"races":   "race",
+	"classes": "class",
+	"items":   "item",
+	"relics":  "relic",
+	"patches": "patch",
+	"pros":    "pro",
+}
+
 func CodexEmpty(entity string) string {
-	singular := strings.TrimSuffix(entity, "s")
-	if strings.HasSuffix(entity, "es") {
-		singular = strings.TrimSuffix(entity, "es")
-	}
-	return fmt.Sprintf("no %s yet. add the first %s so lineups can reference it.", entity, singular)
+	return fmt.Sprintf("no %s yet. add the first %s so lineups can reference it.", entity, codexSingular[entity])
 }
 
 type tab struct {

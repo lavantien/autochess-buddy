@@ -98,6 +98,7 @@ func TestRoutes_RenderSpecEmptyStates(t *testing.T) {
 	}{
 		{"/dashboard", "no finalized matches for this filter yet. finalize a few matches first."},
 		{"/heroes", "no heroes yet. add the first hero so lineups can reference it."},
+		{"/races", "no races yet. add the first race so lineups can reference it."},
 		{"/matches", "no matches yet. start one from the game you just finished."},
 	}
 	for _, c := range cases {
