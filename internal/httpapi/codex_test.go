@@ -2,6 +2,8 @@ package httpapi
 
 import (
 	"context"
+	"errors"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -255,5 +257,32 @@ func TestCodexIndexShowsSeededAnalytics(t *testing.T) {
 	body := rec.Body.String()
 	if !strings.Contains(body, "grim jaw") || !strings.Contains(body, "9") {
 		t.Fatalf("heroes table must show the fixture hero and its lineups count, got %s", body)
+	}
+}
+
+// TestCodexDelete_RerenderFailureLandsOnOwnTab drives the conflict arm's
+// rerender to failure: the degraded answer must stay on the entity's own tab,
+// not strand the user on the matches list.
+func TestCodexDelete_RerenderFailureLandsOnOwnTab(t *testing.T) {
+	f := seedEditor(t)
+	s := &Server{log: slog.Default(), st: f.st}
+	boom := func() error { return errors.New("rerender store fault") }
+
+	req := httptest.NewRequest(http.MethodDelete, "/items/"+strconv.FormatInt(f.itemID, 10), nil)
+	rec := httptest.NewRecorder()
+	s.codexDelete(rec, req, "items", f.itemID, boom)
+	if rec.Code != http.StatusSeeOther {
+		t.Fatalf("plain status = %d, want 303", rec.Code)
+	}
+	if loc := rec.Header().Get("Location"); loc != "/items" {
+		t.Fatalf("fallback location = %q, want /items", loc)
+	}
+
+	hxReq := httptest.NewRequest(http.MethodDelete, "/items/"+strconv.FormatInt(f.itemID, 10), nil)
+	hxReq.Header.Set("HX-Request", "true")
+	hxRec := httptest.NewRecorder()
+	s.codexDelete(hxRec, hxReq, "items", f.itemID, boom)
+	if hxRec.Code != http.StatusUnprocessableEntity {
+		t.Fatalf("hx status = %d, want bare 422", hxRec.Code)
 	}
 }

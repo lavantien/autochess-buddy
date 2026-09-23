@@ -25,15 +25,9 @@ func formState(r *http.Request, keys ...string) ui.CodexFormState {
 func (s *Server) codexDelete(w http.ResponseWriter, r *http.Request, entity string, id int64, rerender func() error) {
 	err := s.deleteEntity(r, entity, id)
 	if errors.Is(err, domain.ErrInUse) {
-		if rerender != nil {
-			rerr := rerender()
-			if rerr == nil {
-				return
-			}
-			s.mutationFallback(w, r, rerr)
-			return
+		if rerr := rerender(); rerr != nil {
+			s.mutationFallbackTo(w, r, rerr, "/"+entity)
 		}
-		s.mutationFallback(w, r, err)
 		return
 	}
 	if err != nil {
