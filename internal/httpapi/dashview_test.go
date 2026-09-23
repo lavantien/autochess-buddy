@@ -92,6 +92,9 @@ func TestMatchList_PatchParamFiltersToPatchMatches(t *testing.T) {
 	if strings.Contains(ubody, "3/8") || strings.Contains(ubody, "1/1") {
 		t.Fatalf("unknown patch version must hide every row, got %s", ubody[:min(500, len(ubody))])
 	}
+	if !strings.Contains(ubody, "unknown patch") {
+		t.Fatalf("the patch select must not claim all while the filter is set, got %s", ubody[:min(500, len(ubody))])
+	}
 }
 
 func TestMatchList_EmptyFilteredCopy(t *testing.T) {

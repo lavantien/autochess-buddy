@@ -26,6 +26,9 @@ templ dashBody(view string, patches []domain.Patch, patchVersion string, f domai
 					for _, p := range patches {
 						<option value={ p.Version } selected?={ patchVersion == p.Version }>{ p.Version }</option>
 					}
+					if patchVersion != "" && !patchKnown(patches, patchVersion) {
+						<option selected disabled>unknown patch</option>
+					}
 				</select>
 			</label>
 			<label>

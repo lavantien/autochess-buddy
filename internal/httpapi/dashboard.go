@@ -31,7 +31,8 @@ func (s *Server) dashView(view string) http.HandlerFunc {
 	}
 }
 
-// dashFilter resolves the query params into the analytics filter.
+// dashFilter resolves the query params into the analytics filter. An unknown
+// patch version filters to nothing (-1 matches no row, 0 means unfiltered).
 func (s *Server) dashFilter(r *http.Request) (domain.Filter, string) {
 	f := domain.Filter{Source: r.URL.Query().Get("source")}
 	version := r.URL.Query().Get("patch")
@@ -44,6 +45,10 @@ func (s *Server) dashFilter(r *http.Request) (domain.Filter, string) {
 					break
 				}
 			}
+		}
+		if f.PatchID == 0 {
+			s.log.Warn("resolve patch filter", "version", version)
+			f.PatchID = -1
 		}
 	}
 	return f, version

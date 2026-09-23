@@ -21,6 +21,9 @@ templ matchesBody(rows []domain.MatchListRow, f domain.MatchFilter, patches []do
 					for _, p := range patches {
 						<option value={ p.Version } selected?={ f.PatchID == p.ID }>{ p.Version }</option>
 					}
+					if f.PatchID < 0 {
+						<option selected disabled>unknown patch</option>
+					}
 				</select>
 			</label>
 			<label>

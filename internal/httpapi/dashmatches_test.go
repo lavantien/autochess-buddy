@@ -96,6 +96,28 @@ func TestDashboard_FilterRidesQueryParams(t *testing.T) {
 	}
 }
 
+// An unknown ?patch= version must filter to nothing instead of silently
+// rendering full history, and the filter row must say so instead of "all".
+func TestDashboard_UnknownPatchFilterMatchesNothing(t *testing.T) {
+	h, st, _, fake := newDashTestServer(t)
+	if err := seed.Load(st.DB); err != nil {
+		t.Fatalf("seed: %v", err)
+	}
+	req := httptest.NewRequest(http.MethodGet, "/dashboard/heroes?patch=9.9", nil)
+	rec := httptest.NewRecorder()
+	h.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d", rec.Code)
+	}
+	if fake.lastFilter.PatchID != -1 {
+		t.Fatalf("filter reaching analytics = %+v, want patch -1", fake.lastFilter)
+	}
+	body := rec.Body.String()
+	if !strings.Contains(body, "unknown patch") {
+		t.Fatalf("filter row must echo the unknown patch, got %s", body[:min(400, len(body))])
+	}
+}
+
 func TestMatchList_PipsAndStateFilters(t *testing.T) {
 	h, st, _, _ := newDashTestServer(t)
 	if err := seed.Load(st.DB); err != nil {

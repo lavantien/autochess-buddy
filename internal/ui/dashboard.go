@@ -3,6 +3,8 @@ package ui
 import (
 	"strconv"
 	"time"
+
+	"github.com/lavantien/autochess-buddy/internal/domain"
 )
 
 // pct renders a share as a percent with one decimal.
@@ -33,3 +35,14 @@ func playedText(unix int64) string {
 
 // dashViews is the tab strip over the analytics partials.
 var dashViews = []string{"heroes", "synergies", "items", "relics"}
+
+// patchKnown reports whether the dashboard filter's version names a real patch
+// row; an unknown version renders a disabled option instead of "all".
+func patchKnown(patches []domain.Patch, version string) bool {
+	for _, p := range patches {
+		if p.Version == version {
+			return true
+		}
+	}
+	return false
+}
