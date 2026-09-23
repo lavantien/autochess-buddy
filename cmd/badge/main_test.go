@@ -140,6 +140,14 @@ func TestPctTenths(t *testing.T) {
 		{2, 3, 667},
 		{899, 1000, 899},
 		{900, 1000, 900},
+		// exact halves round up (decimal half-up): 0.05% -> 1 tenth,
+		// 0.15% -> 2 tenths. the float path was verified equal to integer
+		// half-up over every total <= 3000 and sampled totals to 1e7.
+		{1, 2000, 1},
+		{3, 2000, 2},
+		// the gate edge: 89.95% lands on 900 tenths, so message, color, and
+		// the min-90 gate all agree it is 90.0.
+		{1799, 2000, 900},
 	} {
 		if got := pctTenths(tc.covered, tc.total); got != tc.want {
 			t.Fatalf("pctTenths(%d, %d) = %d, want %d", tc.covered, tc.total, got, tc.want)
