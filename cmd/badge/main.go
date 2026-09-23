@@ -14,6 +14,7 @@ import (
 	"log"
 	"math"
 	"os"
+	"slices"
 	"strconv"
 	"strings"
 )
@@ -40,10 +41,15 @@ func splitSkip(s string) []string {
 
 // run writes the badge json before the gate check so a failed gate still
 // publishes the truthful coverage color. Coverage is kept in integer tenths
-// so message, color, and gate always agree.
+// so message, color, and gate always agree. min must be a finite percent
+// in (0, 100]; NaN or huge values would convert to garbage int thresholds
+// and silently pass the gate.
 func run(profile, out string, min float64, skip []string) (int, error) {
-	if min <= 0 {
-		return 0, fmt.Errorf("min must be > 0, got %v", min)
+	if math.IsNaN(min) || math.IsInf(min, 0) || min <= 0 || min > 100 {
+		return 0, fmt.Errorf("min must be in (0, 100], got %v", min)
+	}
+	if slices.Contains(skip, "") {
+		return 0, fmt.Errorf("skip patterns must be non-empty")
 	}
 	f, err := os.Open(profile)
 	if err != nil {
@@ -68,7 +74,9 @@ func run(profile, out string, min float64, skip []string) (int, error) {
 	if err := os.WriteFile(out, body, 0o644); err != nil {
 		return tenths, err
 	}
-	if tenths < int(math.Round(min*10)) {
+	// any positive min demands at least a tenth of a percent
+	threshold := max(int(math.Round(min*10)), 1)
+	if tenths < threshold {
 		return tenths, fmt.Errorf("coverage %.1f%% below minimum %.1f%%", float64(tenths)/10, min)
 	}
 	return tenths, nil

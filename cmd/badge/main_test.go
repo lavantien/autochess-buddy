@@ -1,6 +1,7 @@
 package main
 
 import (
+	"math"
 	"os"
 	"path/filepath"
 	"strings"
@@ -167,6 +168,32 @@ func TestRunRejectsBadInputs(t *testing.T) {
 	}
 	if _, err := run(filepath.Join(t.TempDir(), "missing.out"), filepath.Join(t.TempDir(), "c.json"), 90, nil); err == nil {
 		t.Fatal("missing profile: want error, got nil")
+	}
+}
+
+func TestRunRejectsDegenerateMin(t *testing.T) {
+	out := filepath.Join(t.TempDir(), "coverage.json")
+	zero := "mode: atomic\na.go:1.1,2.2 10 0\n"
+	for _, min := range []float64{math.NaN(), math.Inf(1), math.Inf(-1), 1e300, -1, 0} {
+		if _, err := run(writeProfile(t, zero), out, min, nil); err == nil {
+			t.Fatalf("min %v: want error, got nil", min)
+		}
+	}
+	// A positive min below one tenth still demands at least 0.1% coverage.
+	if _, err := run(writeProfile(t, zero), out, 0.04, nil); err == nil {
+		t.Fatal("min 0.04 at 0% coverage: want gate error, got nil")
+	}
+}
+
+func TestRunRejectsEmptySkipPattern(t *testing.T) {
+	out := filepath.Join(t.TempDir(), "coverage.json")
+	profile := "mode: atomic\na.go:1.1,2.2 899 1\na.go:3.1,4.2 101 0\n"
+	_, err := run(writeProfile(t, profile), out, 90, []string{"a.go", ""})
+	if err == nil || !strings.Contains(err.Error(), "skip") {
+		t.Fatalf("want skip validation error, got %v", err)
+	}
+	if _, err := run(writeProfile(t, profile), out, 80, []string{"_missing.go"}); err != nil {
+		t.Fatalf("clean skip list: %v", err)
 	}
 }
 
