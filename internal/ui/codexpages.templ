@@ -1,0 +1,425 @@
+package ui
+
+import (
+	"github.com/lavantien/autochess-buddy/internal/domain"
+	"github.com/lavantien/autochess-buddy/internal/store/sqlite"
+)
+
+// HeroesPage renders the heroes index with the create disclosure and the
+// read-only analytics columns.
+templ HeroesPage(rows []sqlite.HeroStats, races []domain.Race, classes []domain.Class, st CodexFormState) {
+	@BaseLayout("codex", "heroes", heroesBody(rows, races, classes, st))
+}
+
+templ heroesBody(rows []sqlite.HeroStats, races []domain.Race, classes []domain.Class, st CodexFormState) {
+	<h1>heroes</h1>
+	<details class="disclosure">
+		<summary>+ new hero</summary>
+		@HeroFields(races, classes, st, 0, "save hero")
+	</details>
+	if len(rows) == 0 {
+		@EmptyState(CodexEmpty("heroes"), nil)
+	} else {
+		<table>
+			<thead><tr><th>name</th><th>cost</th><th>races</th><th>classes</th><th>lineups</th><th>avg place</th></tr></thead>
+			<tbody>
+				for _, r := range rows {
+					<tr>
+						<td><a href={ "/heroes/" + itoa(r.Hero.ID) }>{ r.Hero.Name }</a></td>
+						<td>@RarityDot(r.Hero.Cost)<span class="cost">{ r.Hero.Cost }</span></td>
+						<td>{ lineageNames(r.Hero.Races) }</td>
+						<td>{ lineageNamesC(r.Hero.Classes) }</td>
+						<td>{ itoa(int64(r.Lineups)) }</td>
+						<td>{ avgText(r.AvgPlace) }</td>
+					</tr>
+				}
+			</tbody>
+		</table>
+	}
+}
+
+// HeroEditPage renders one hero's edit form plus delete.
+templ HeroEditPage(h domain.Hero, races []domain.Race, classes []domain.Class, st CodexFormState, conflict string) {
+	@BaseLayout("codex", "heroes", heroEditBody(h, races, classes, st, conflict))
+}
+
+templ heroEditBody(h domain.Hero, races []domain.Race, classes []domain.Class, st CodexFormState, conflict string) {
+	<h1>{ h.Name }</h1>
+	if conflict != "" {
+		<p class="banner" role="alert">{ conflict }</p>
+	}
+	@HeroFields(races, classes, st, h.ID, "save hero")
+	@CodexDeleteForm("hero", h.ID, h.Name)
+}
+
+// HeroFields renders the hero fields; id 0 means create.
+templ HeroFields(races []domain.Race, classes []domain.Class, st CodexFormState, id int64, submit string) {
+	<form method="post" action={ heroAction(id) } class="stack codexform">
+		<label>
+			<span>name</span>
+			<input type="text" name="name" value={ st.val("name", "") } data-autofocus={ st.autofocus("name") }/>
+			if msg := st.err("name"); msg != "" {
+				<p class="fielderr">{ msg }</p>
+			}
+		</label>
+		<label>
+			<span>cost</span>
+			<input type="number" name="cost" min="1" max="5" value={ st.val("cost", "1") } data-autofocus={ st.autofocus("cost") }/>
+			if msg := st.err("cost"); msg != "" {
+				<p class="fielderr">{ msg }</p>
+			}
+		</label>
+		<label>
+			<span>race 1</span>
+			<select name="race1">
+				<option value="">none</option>
+				for _, rc := range races {
+					<option value={ itoa(rc.ID) } selected={ st.val("race1", "") == itoa(rc.ID) }>{ rc.Name }</option>
+				}
+			</select>
+		</label>
+		<label>
+			<span>race 2</span>
+			<select name="race2">
+				<option value="">none</option>
+				for _, rc := range races {
+					<option value={ itoa(rc.ID) } selected={ st.val("race2", "") == itoa(rc.ID) }>{ rc.Name }</option>
+				}
+			</select>
+		</label>
+		<label>
+			<span>class 1</span>
+			<select name="class1">
+				<option value="">none</option>
+				for _, cl := range classes {
+					<option value={ itoa(cl.ID) } selected={ st.val("class1", "") == itoa(cl.ID) }>{ cl.Name }</option>
+				}
+			</select>
+		</label>
+		<label>
+			<span>class 2</span>
+			<select name="class2">
+				<option value="">none</option>
+				for _, cl := range classes {
+					<option value={ itoa(cl.ID) } selected={ st.val("class2", "") == itoa(cl.ID) }>{ cl.Name }</option>
+				}
+			</select>
+		</label>
+		if msg := st.err("lineage"); msg != "" {
+			<p class="fielderr">{ msg }</p>
+		}
+		<label>
+			<span>ability</span>
+			<input type="text" name="ability" value={ st.val("ability", "") }/>
+		</label>
+		<label>
+			<span>notes</span>
+			<input type="text" name="notes" value={ st.val("notes", "") }/>
+		</label>
+		<button type="submit" class="button button-primary">{ submit }</button>
+	</form>
+}
+
+// ItemsPage renders the item index and create form.
+templ ItemsPage(items []domain.Item, st CodexFormState) {
+	@BaseLayout("codex", "items", itemsBody(items, st))
+}
+
+templ itemsBody(items []domain.Item, st CodexFormState) {
+	<h1>items</h1>
+	<details class="disclosure">
+		<summary>+ new item</summary>
+		@ItemForm(items, st, 0, "save item")
+	</details>
+	if len(items) == 0 {
+		@EmptyState(CodexEmpty("items"), nil)
+	} else {
+		<table>
+			<thead><tr><th>name</th><th>tier</th><th>effect</th></tr></thead>
+			<tbody>
+				for _, it := range items {
+					<tr>
+						<td><a href={ "/items/" + itoa(it.ID) }>{ it.Name }</a></td>
+						<td>{ itoa(int64(it.Tier)) }</td>
+						<td>{ it.Effect }</td>
+					</tr>
+				}
+			</tbody>
+		</table>
+	}
+}
+
+templ ItemEditPage(it domain.Item, all []domain.Item, st CodexFormState, conflict string) {
+	@BaseLayout("codex", "items", itemEditBody(it, all, st, conflict))
+}
+
+templ itemEditBody(it domain.Item, all []domain.Item, st CodexFormState, conflict string) {
+	<h1>{ it.Name }</h1>
+	if conflict != "" {
+		<p class="banner" role="alert">{ conflict }</p>
+	}
+	@ItemForm(all, st, it.ID, "save item")
+	@CodexDeleteForm("item", it.ID, it.Name)
+}
+
+// ItemForm renders the item fields including the recipe multi-select; selected
+// components arrive as preselected options.
+templ ItemForm(all []domain.Item, st CodexFormState, id int64, submit string) {
+	<form method="post" action={ itemAction(id) } class="stack codexform">
+		<label>
+			<span>name</span>
+			<input type="text" name="name" value={ st.val("name", "") } data-autofocus={ st.autofocus("name") }/>
+			if msg := st.err("name"); msg != "" {
+				<p class="fielderr">{ msg }</p>
+			}
+		</label>
+		<label>
+			<span>tier</span>
+			<input type="number" name="tier" min="1" value={ st.val("tier", "1") }/>
+		</label>
+		<label>
+			<span>effect</span>
+			<input type="text" name="effect" value={ st.val("effect", "") }/>
+		</label>
+		<label>
+			<span>components</span>
+			<select name="components" multiple size="4">
+				for _, opt := range all {
+					<option value={ itoa(opt.ID) } selected={ st.hasComponent(opt.ID) }>{ opt.Name }</option>
+				}
+			</select>
+		</label>
+		<button type="submit" class="button button-primary">{ submit }</button>
+	</form>
+}
+
+// RelicsPage, PatchesPage, ProsPage render the plain quartets.
+templ RelicsPage(relics []domain.Relic, st CodexFormState) {
+	@BaseLayout("codex", "relics", plainBody("relics", relicRows(relics), relicForm(st, 0), CodexEmpty("relics")))
+}
+
+templ RelicEditPage(r domain.Relic, st CodexFormState, conflict string) {
+	@BaseLayout("codex", "relics", relicEditBody(r, st, conflict))
+}
+
+templ relicEditBody(r domain.Relic, st CodexFormState, conflict string) {
+	<h1>{ r.Name }</h1>
+	if conflict != "" {
+		<p class="banner" role="alert">{ conflict }</p>
+	}
+	@relicForm(st, r.ID)
+	@CodexDeleteForm("relic", r.ID, r.Name)
+}
+
+templ relicForm(st CodexFormState, id int64) {
+	<form method="post" action={ plainAction("relics", id) } class="stack codexform">
+		<label>
+			<span>name</span>
+			<input type="text" name="name" value={ st.val("name", "") } data-autofocus={ st.autofocus("name") }/>
+			if msg := st.err("name"); msg != "" {
+				<p class="fielderr">{ msg }</p>
+			}
+		</label>
+		<label>
+			<span>effect</span>
+			<input type="text" name="effect" value={ st.val("effect", "") }/>
+		</label>
+		<button type="submit" class="button button-primary">save relic</button>
+	</form>
+}
+
+templ PatchesPage(patches []domain.Patch, st CodexFormState) {
+	@BaseLayout("codex", "patches", plainBody("patches", patchRows(patches), patchForm(st, 0), CodexEmpty("patches")))
+}
+
+templ PatchEditPage(p domain.Patch, st CodexFormState, conflict string) {
+	@BaseLayout("codex", "patches", patchEditBody(p, st, conflict))
+}
+
+templ patchEditBody(p domain.Patch, st CodexFormState, conflict string) {
+	<h1>{ p.Version }</h1>
+	if conflict != "" {
+		<p class="banner" role="alert">{ conflict }</p>
+	}
+	@patchForm(st, p.ID)
+	@CodexDeleteForm("patch", p.ID, p.Version)
+}
+
+templ patchForm(st CodexFormState, id int64) {
+	<form method="post" action={ plainAction("patches", id) } class="stack codexform">
+		<label>
+			<span>version</span>
+			<input type="text" name="version" value={ st.val("version", "") } data-autofocus={ st.autofocus("version") }/>
+			if msg := st.err("version"); msg != "" {
+				<p class="fielderr">{ msg }</p>
+			}
+		</label>
+		<label>
+			<span>released at</span>
+			<input type="date" name="released_at" value={ st.val("released_at", "") }/>
+		</label>
+		<button type="submit" class="button button-primary">save patch</button>
+	</form>
+}
+
+templ ProsPage(pros []domain.Pro, st CodexFormState) {
+	@BaseLayout("codex", "pros", plainBody("pros", proRows(pros), proForm(st, 0), CodexEmpty("pros")))
+}
+
+templ ProEditPage(p domain.Pro, st CodexFormState, conflict string) {
+	@BaseLayout("codex", "pros", proEditBody(p, st, conflict))
+}
+
+templ proEditBody(p domain.Pro, st CodexFormState, conflict string) {
+	<h1>{ p.Name }</h1>
+	if conflict != "" {
+		<p class="banner" role="alert">{ conflict }</p>
+	}
+	@proForm(st, p.ID)
+	@CodexDeleteForm("pro", p.ID, p.Name)
+}
+
+templ proForm(st CodexFormState, id int64) {
+	<form method="post" action={ plainAction("pros", id) } class="stack codexform">
+		<label>
+			<span>name</span>
+			<input type="text" name="name" value={ st.val("name", "") } data-autofocus={ st.autofocus("name") }/>
+			if msg := st.err("name"); msg != "" {
+				<p class="fielderr">{ msg }</p>
+			}
+		</label>
+		<label>
+			<span>handle</span>
+			<input type="text" name="handle" value={ st.val("handle", "") }/>
+		</label>
+		<label>
+			<span>peak rank</span>
+			<input type="text" name="peak_rank" value={ st.val("peak_rank", "") }/>
+		</label>
+		<button type="submit" class="button button-primary">save pro</button>
+	</form>
+}
+
+// CodexDeleteForm is the hx-delete + confirm control every edit page carries.
+templ CodexDeleteForm(entity string, id int64, name string) {
+	<form
+		class="inline-form"
+		hx-delete={ "/" + entityPlural(entity) + "/" + itoa(id) }
+		hx-confirm={ "delete " + name + "? existing matches keep their history." }
+		hx-sync="this:abort"
+	>
+		<button type="submit" class="button button-destructive" hx-disable="this">delete { entity }</button>
+	</form>
+}
+
+// plainBody is the shared index shape for the simple codex entities.
+templ plainBody(entity string, rows []plainRow, form templ.Component, empty string) {
+	<h1>{ entity }</h1>
+	<details class="disclosure">
+		<summary>+ new { entity }</summary>
+		@form
+	</details>
+	if len(rows) == 0 {
+		@EmptyState(empty, nil)
+	} else {
+		<table>
+			<thead><tr><th>name</th><th>detail</th></tr></thead>
+			<tbody>
+				for _, r := range rows {
+					<tr>
+						<td><a href={ r.Href }>{ r.Label }</a></td>
+						<td>{ r.Extra }</td>
+					</tr>
+				}
+			</tbody>
+		</table>
+	}
+}
+
+// LadderEntry is one race or class with its tier ladder for the synergies tab.
+type LadderEntry struct {
+	ID    int64
+	Name  string
+	Tiers []domain.Tier
+}
+
+// SynergiesPage manages races and classes with their tier ladders.
+templ SynergiesPage(races, classes []LadderEntry, st CodexFormState) {
+	@BaseLayout("codex", "races", synergiesBody(races, classes, st))
+}
+
+templ synergiesBody(races, classes []LadderEntry, st CodexFormState) {
+	<div class="synergy-cols">
+		<section>
+			<h1>races</h1>
+			<details class="disclosure">
+				<summary>+ new race</summary>
+				<form method="post" action="/races" class="stack codexform">
+					<label><span>name</span><input type="text" name="name" data-autofocus={ st.autofocus("race-name") }/></label>
+					<button type="submit" class="button button-primary">save race</button>
+				</form>
+			</details>
+			if len(races) == 0 {
+				@EmptyState(CodexEmpty("races"), nil)
+			}
+			for _, rc := range races {
+				@LadderEditor("races", rc, st)
+			}
+		</section>
+		<section>
+			<h1>classes</h1>
+			<details class="disclosure">
+				<summary>+ new class</summary>
+				<form method="post" action="/classes" class="stack codexform">
+					<label><span>name</span><input type="text" name="name" data-autofocus={ st.autofocus("class-name") }/></label>
+					<button type="submit" class="button button-primary">save class</button>
+				</form>
+			</details>
+			if len(classes) == 0 {
+				@EmptyState(CodexEmpty("classes"), nil)
+			}
+			for _, cl := range classes {
+				@LadderEditor("classes", cl, st)
+			}
+		</section>
+	</div>
+}
+
+// LadderEditor renders one race or class with its tier rows and per-tier forms.
+templ LadderEditor(entity string, e LadderEntry, st CodexFormState) {
+	<div class="ladder">
+		<form method="post" action={ "/" + entity + "/" + itoa(e.ID) } class="inline-form">
+			<input type="hidden" name="mode" value="save_name"/>
+			<input type="text" name="name" value={ e.Name } aria-label="name"/>
+			<button type="submit" class="button button-quiet" hx-disable="this">save { entity }</button>
+		</form>
+		<table>
+			<thead><tr><th>count</th><th>effect</th></tr></thead>
+			<tbody>
+				for _, t := range e.Tiers {
+					<tr>
+						<td>{ t.Count }</td>
+						<td>{ t.Effect }</td>
+						<td class="rowactions">
+							<form method="post" action={ "/" + entity + "/" + itoa(e.ID) } class="inline-form">
+								<input type="hidden" name="mode" value="delete_tier"/>
+								<input type="hidden" name="count" value={ itoa(int64(t.Count)) }/>
+								<button type="submit" class="button button-quiet">delete tier</button>
+							</form>
+						</td>
+					</tr>
+				}
+			</tbody>
+		</table>
+		<form method="post" action={ "/" + entity + "/" + itoa(e.ID) } class="inline-form tier-add">
+			<input type="hidden" name="mode" value="save_tier"/>
+			<input type="number" name="count" min="1" placeholder="count" aria-label="count"/>
+			<input type="text" name="effect" placeholder="effect" aria-label="effect"/>
+			<button type="submit" class="button button-primary">save tier</button>
+			if msg := st.err("tier"); msg != "" {
+				<p class="fielderr">{ msg }</p>
+			}
+		</form>
+		@CodexDeleteForm(codexSingular[entity], e.ID, e.Name)
+	</div>
+}

@@ -38,6 +38,8 @@ func TestRoutes_RegisterAllSpecPaths(t *testing.T) {
 		{"remove slot", "DELETE", "/slots/3", http.StatusSeeOther},
 		{"remove lineup", "DELETE", "/lineups/9", http.StatusSeeOther},
 	}
+	// Codex entities now answer like real handlers: empty-body creates and updates
+	// rerender with field errors (422), detail pages for missing rows redirect.
 	for _, e := range []string{"heroes", "races", "classes", "items", "relics", "patches", "pros"} {
 		cases = append(cases,
 			struct {
@@ -47,11 +49,11 @@ func TestRoutes_RegisterAllSpecPaths(t *testing.T) {
 			struct {
 				name, method, path string
 				want               int
-			}{"codex create " + e, "POST", "/" + e, http.StatusSeeOther},
+			}{"codex create " + e, "POST", "/" + e, http.StatusUnprocessableEntity},
 			struct {
 				name, method, path string
 				want               int
-			}{"codex detail " + e, "GET", "/" + e + "/1", http.StatusOK},
+			}{"codex detail " + e, "GET", "/" + e + "/1", http.StatusSeeOther},
 			struct {
 				name, method, path string
 				want               int

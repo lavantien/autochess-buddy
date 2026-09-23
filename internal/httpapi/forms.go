@@ -58,3 +58,9 @@ func pathID(r *http.Request, name string) int64 {
 	id, _ := strconv.ParseInt(r.PathValue(name), 10, 64)
 	return id
 }
+
+// parseID parses one decimal id, 0 for garbage.
+func parseID(s string) int64 {
+	id, _ := strconv.ParseInt(strings.TrimSpace(s), 10, 64)
+	return id
+}

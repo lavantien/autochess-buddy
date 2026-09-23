@@ -39,13 +39,50 @@ func New(log *slog.Logger, st *sqlite.Store, entry service.EntryService, dash an
 	mux.HandleFunc("GET /dashboard/items", stubPage(log, "dashboard", "item lift", dashEmpty))
 	mux.HandleFunc("GET /dashboard/relics", stubPage(log, "dashboard", "relic lift", dashEmpty))
 
-	for _, entity := range []string{"heroes", "races", "classes", "items", "relics", "patches", "pros"} {
-		mux.HandleFunc("GET /"+entity, stubPage(log, "codex", entity, ui.CodexEmpty(entity)))
-		mux.HandleFunc("POST /"+entity, mutStub("/"+entity))
-		mux.HandleFunc("GET /"+entity+"/{id}", stubPage(log, "codex", entity, ui.CodexEmpty(entity)))
-		mux.HandleFunc("POST /"+entity+"/{id}", mutStub("/"+entity))
-		mux.HandleFunc("DELETE /"+entity+"/{id}", mutStub("/"+entity))
+	mux.HandleFunc("GET /heroes", s.heroIndex)
+	mux.HandleFunc("POST /heroes", s.heroCreate)
+	mux.HandleFunc("GET /heroes/{id}", s.heroEdit)
+	mux.HandleFunc("POST /heroes/{id}", s.heroUpdate)
+	mux.HandleFunc("DELETE /heroes/{id}", s.heroDelete)
+
+	// Races and classes share the synergies tab and its ladder editor.
+	toSynergies := func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, "/races", http.StatusSeeOther)
 	}
+	mux.HandleFunc("GET /races", s.synergyIndex)
+	mux.HandleFunc("POST /races", func(w http.ResponseWriter, r *http.Request) { s.synergyCreate(w, r, "races") })
+	mux.HandleFunc("GET /races/{id}", toSynergies)
+	mux.HandleFunc("POST /races/{id}", func(w http.ResponseWriter, r *http.Request) { s.synergyUpdate(w, r, "races") })
+	mux.HandleFunc("DELETE /races/{id}", func(w http.ResponseWriter, r *http.Request) { s.codexDelete(w, r, "races", pathID(r, "id"), nil) })
+	mux.HandleFunc("GET /classes", s.synergyIndex)
+	mux.HandleFunc("POST /classes", func(w http.ResponseWriter, r *http.Request) { s.synergyCreate(w, r, "classes") })
+	mux.HandleFunc("GET /classes/{id}", toSynergies)
+	mux.HandleFunc("POST /classes/{id}", func(w http.ResponseWriter, r *http.Request) { s.synergyUpdate(w, r, "classes") })
+	mux.HandleFunc("DELETE /classes/{id}", func(w http.ResponseWriter, r *http.Request) { s.codexDelete(w, r, "classes", pathID(r, "id"), nil) })
+
+	mux.HandleFunc("GET /items", s.itemIndex)
+	mux.HandleFunc("POST /items", s.itemCreate)
+	mux.HandleFunc("GET /items/{id}", s.itemEdit)
+	mux.HandleFunc("POST /items/{id}", s.itemUpdate)
+	mux.HandleFunc("DELETE /items/{id}", s.itemDelete)
+
+	mux.HandleFunc("GET /relics", s.relicIndex)
+	mux.HandleFunc("POST /relics", s.relicCreate)
+	mux.HandleFunc("GET /relics/{id}", s.relicEdit)
+	mux.HandleFunc("POST /relics/{id}", s.relicUpdate)
+	mux.HandleFunc("DELETE /relics/{id}", s.relicDelete)
+
+	mux.HandleFunc("GET /patches", s.patchIndex)
+	mux.HandleFunc("POST /patches", s.patchCreate)
+	mux.HandleFunc("GET /patches/{id}", s.patchEdit)
+	mux.HandleFunc("POST /patches/{id}", s.patchUpdate)
+	mux.HandleFunc("DELETE /patches/{id}", s.patchDelete)
+
+	mux.HandleFunc("GET /pros", s.proIndex)
+	mux.HandleFunc("POST /pros", s.proCreate)
+	mux.HandleFunc("GET /pros/{id}", s.proEdit)
+	mux.HandleFunc("POST /pros/{id}", s.proUpdate)
+	mux.HandleFunc("DELETE /pros/{id}", s.proDelete)
 
 	matchesEmpty := "no matches yet. start one from the game you just finished."
 	mux.HandleFunc("GET /matches", stubPage(log, "matches", "matches", matchesEmpty))
