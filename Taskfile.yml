@@ -1,0 +1,61 @@
+version: '3'
+
+env:
+  CGO_ENABLED: '1'
+
+tasks:
+  gen:
+    desc: generate templ go code
+    cmds:
+      - go tool templ generate
+
+  fmt:
+    desc: gofmt and templ fmt
+    cmds:
+      - gofmt -l -w .
+      - go tool templ fmt .
+
+  lint:
+    cmds:
+      - golangci-lint run
+
+  vet:
+    cmds:
+      - go vet ./...
+
+  test:
+    desc: unit and property tests
+    cmds:
+      - go test ./...
+
+  e2e:
+    cmds:
+      - go test -tags=e2e ./e2e/... -count=1
+
+  playwright:
+    desc: install playwright chromium (task e2e needs it once)
+    cmds:
+      - go run ./e2e/cmd/playwright-install
+
+  seed:
+    desc: load the fake fixture into data/app.db (refuses a non-empty db)
+    cmds:
+      - go run ./cmd/autochess -seed
+
+  serve:
+    cmds:
+      - go run ./cmd/autochess
+
+  uiwatch:
+    cmds:
+      - go tool templ generate --watch
+
+  dev:
+    desc: templ watch plus serve
+    deps: [uiwatch, serve]
+
+  check:
+    desc: full verification chain
+    deps: [gen, fmt, lint, vet, test, e2e]
+    cmds:
+      - git diff --exit-code -- internal/ui
