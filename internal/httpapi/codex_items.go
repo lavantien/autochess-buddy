@@ -35,13 +35,13 @@ func (s *Server) itemCreate(w http.ResponseWriter, r *http.Request) {
 		st.Errs = append(st.Errs, domain.FieldError{Field: "name", Msg: "name is required."})
 	}
 	if len(st.Errs) > 0 {
-		items, _ := s.st.ListItems(r.Context())
+		items := loadList(s.log, r.Context(), "items", s.st.ListItems)
 		renderPage(s.log, w, r, http.StatusUnprocessableEntity, ui.ItemsPage(items, st))
 		return
 	}
 	if _, err := s.st.CreateItem(r.Context(), it, components); err != nil {
 		st.Errs = append(st.Errs, domain.FieldError{Field: "name", Msg: "that name is taken."})
-		items, _ := s.st.ListItems(r.Context())
+		items := loadList(s.log, r.Context(), "items", s.st.ListItems)
 		renderPage(s.log, w, r, http.StatusUnprocessableEntity, ui.ItemsPage(items, st))
 		return
 	}
@@ -55,7 +55,7 @@ func (s *Server) itemEdit(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/items", http.StatusSeeOther)
 		return
 	}
-	all, _ := s.st.ListItems(r.Context())
+	all := loadList(s.log, r.Context(), "items", s.st.ListItems)
 	st := ui.NewCodexForm()
 	st.Values["name"], st.Values["tier"], st.Values["effect"] = it.Name, itoa(int64(it.Tier)), it.Effect
 	for _, c := range components {
@@ -75,7 +75,7 @@ func (s *Server) itemUpdate(w http.ResponseWriter, r *http.Request) {
 	it := decodeItem(f, r)
 	it.ID = id
 	components := componentIDs(r)
-	all, _ := s.st.ListItems(r.Context())
+	all := loadList(s.log, r.Context(), "items", s.st.ListItems)
 	if it.Name == "" {
 		st.Errs = append(st.Errs, domain.FieldError{Field: "name", Msg: "name is required."})
 		renderPage(s.log, w, r, http.StatusUnprocessableEntity, ui.ItemEditPage(it, all, st, ""))
@@ -96,7 +96,7 @@ func (s *Server) itemDelete(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			return err
 		}
-		all, _ := s.st.ListItems(r.Context())
+		all := loadList(s.log, r.Context(), "items", s.st.ListItems)
 		renderPage(s.log, w, r, http.StatusConflict, ui.ItemEditPage(it, all, ui.NewCodexForm(), domain.ErrInUse.Error()))
 		return nil
 	})

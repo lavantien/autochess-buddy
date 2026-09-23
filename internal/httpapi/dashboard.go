@@ -22,7 +22,7 @@ func (s *Server) dashView(view string) http.HandlerFunc {
 		if !ok {
 			return
 		}
-		patches, _ := s.st.ListPatches(r.Context())
+		patches := loadList(s.log, r.Context(), "patches", s.st.ListPatches)
 		if isHX(r) {
 			renderOOB(s.log, w, r, http.StatusOK, ui.DashPanel(view, panel), ui.DashCount(n, true))
 			return
@@ -71,6 +71,7 @@ func (s *Server) dashPanel(w http.ResponseWriter, r *http.Request, view string, 
 		}
 		places, perr := s.dash.NetworthByPlacement(ctx, f)
 		if perr != nil {
+			s.log.Warn("networth by placement", "err", perr)
 			stubPage(s.log, "dashboard", "dashboard", "no finalized matches for this filter yet. finalize a few matches first.").ServeHTTP(w, r)
 			return nil, 0, false
 		}

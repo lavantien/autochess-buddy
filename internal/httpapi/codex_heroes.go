@@ -20,8 +20,8 @@ func (s *Server) heroIndex(w http.ResponseWriter, r *http.Request) {
 		stubPage(s.log, "codex", "heroes", ui.CodexEmpty("heroes")).ServeHTTP(w, r)
 		return
 	}
-	races, _ := s.st.ListRaces(r.Context())
-	classes, _ := s.st.ListClasses(r.Context())
+	races := loadList(s.log, r.Context(), "races", s.st.ListRaces)
+	classes := loadList(s.log, r.Context(), "classes", s.st.ListClasses)
 	renderPage(s.log, w, r, http.StatusOK, ui.HeroesPage(rows, races, classes, ui.NewCodexForm()))
 }
 
@@ -65,8 +65,8 @@ func (s *Server) heroEdit(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/heroes", http.StatusSeeOther)
 		return
 	}
-	races, _ := s.st.ListRaces(r.Context())
-	classes, _ := s.st.ListClasses(r.Context())
+	races := loadList(s.log, r.Context(), "races", s.st.ListRaces)
+	classes := loadList(s.log, r.Context(), "classes", s.st.ListClasses)
 	st := ui.NewCodexForm()
 	st.Values["name"], st.Values["cost"] = h.Name, itoa(int64(h.Cost))
 	st.Values["ability"], st.Values["notes"] = h.Ability, h.Notes
@@ -133,10 +133,10 @@ func (s *Server) saveHero(w http.ResponseWriter, r *http.Request, h domain.Hero,
 }
 
 func (s *Server) renderHeroError(w http.ResponseWriter, r *http.Request, h domain.Hero, st ui.CodexFormState, id int64) {
-	races, _ := s.st.ListRaces(r.Context())
-	classes, _ := s.st.ListClasses(r.Context())
+	races := loadList(s.log, r.Context(), "races", s.st.ListRaces)
+	classes := loadList(s.log, r.Context(), "classes", s.st.ListClasses)
 	if id == 0 {
-		rows, _ := s.st.ListHeroesWithStats(r.Context())
+		rows := loadList(s.log, r.Context(), "heroes", s.st.ListHeroesWithStats)
 		renderPage(s.log, w, r, http.StatusUnprocessableEntity, ui.HeroesPage(rows, races, classes, st))
 		return
 	}
@@ -150,8 +150,8 @@ func (s *Server) heroDelete(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			return err
 		}
-		races, _ := s.st.ListRaces(r.Context())
-		classes, _ := s.st.ListClasses(r.Context())
+		races := loadList(s.log, r.Context(), "races", s.st.ListRaces)
+		classes := loadList(s.log, r.Context(), "classes", s.st.ListClasses)
 		renderPage(s.log, w, r, http.StatusConflict, ui.HeroEditPage(h, races, classes, ui.NewCodexForm(), domain.ErrInUse.Error()))
 		return nil
 	})

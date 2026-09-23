@@ -68,7 +68,8 @@ func (s *Server) addSlot(w http.ResponseWriter, r *http.Request) {
 			ui.HeroForm(fresh, *fl, ui.HeroFormState{Reset: true}, true))
 		return
 	}
-	s.mutationFallback(w, r, err)
+	// the lineup vanished between the write and the reload
+	s.mutationFallback(w, r, domain.ErrNotFound)
 }
 
 // saveStars rewrites one slot's stars; the response redraws the grid.

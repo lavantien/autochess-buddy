@@ -1,6 +1,7 @@
 package httpapi
 
 import (
+	"context"
 	"log/slog"
 	"net/http"
 
@@ -122,4 +123,14 @@ func (s *Server) mutationFallback(w http.ResponseWriter, r *http.Request, cause 
 		return
 	}
 	http.Redirect(w, r, "/matches", http.StatusSeeOther)
+}
+
+// loadList fetches an option list for a rerender; a load failure logs and
+// yields nil so the page still renders its primary answer.
+func loadList[T any](log *slog.Logger, ctx context.Context, what string, load func(context.Context) ([]T, error)) []T {
+	rows, err := load(ctx)
+	if err != nil {
+		log.Warn("load "+what, "err", err)
+	}
+	return rows
 }

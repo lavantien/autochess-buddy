@@ -33,7 +33,7 @@ func (s *Server) matchList(w http.ResponseWriter, r *http.Request) {
 		stubPage(s.log, "matches", "matches", "no matches yet. start one from the game you just finished.").ServeHTTP(w, r)
 		return
 	}
-	patches, _ := s.st.ListPatches(r.Context())
+	patches := loadList(s.log, r.Context(), "patches", s.st.ListPatches)
 	renderPage(s.log, w, r, http.StatusOK, ui.MatchesListPage(rows, f, patches))
 }
 
@@ -64,7 +64,7 @@ func (s *Server) createMatch(w http.ResponseWriter, r *http.Request) {
 		st.Errs = append(st.Errs, domain.FieldError{Field: "played_at", Msg: "played at must be a datetime."})
 	}
 	if len(st.Errs) > 0 {
-		patches, _ := s.st.ListPatches(r.Context())
+		patches := loadList(s.log, r.Context(), "patches", s.st.ListPatches)
 		renderPage(s.log, w, r, http.StatusUnprocessableEntity, ui.NewMatchPage(patches, st))
 		return
 	}
@@ -72,7 +72,7 @@ func (s *Server) createMatch(w http.ResponseWriter, r *http.Request) {
 	id, cerr := s.entry.CreateMatch(r.Context(), m)
 	if cerr != nil {
 		st.Errs = append(st.Errs, domain.FieldError{Field: "patch_id", Msg: "pick a patch from the list."})
-		patches, _ := s.st.ListPatches(r.Context())
+		patches := loadList(s.log, r.Context(), "patches", s.st.ListPatches)
 		renderPage(s.log, w, r, http.StatusUnprocessableEntity, ui.NewMatchPage(patches, st))
 		return
 	}
@@ -124,7 +124,7 @@ func (s *Server) finalize(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if errors.Is(err, domain.ErrNotFound) {
-		s.mutationFallback(w, r, nil)
+		s.mutationFallback(w, r, err)
 		return
 	}
 	view, verr := s.entry.Editor(r.Context(), id)

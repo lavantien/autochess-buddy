@@ -24,11 +24,14 @@ func (s *Server) codexDelete(w http.ResponseWriter, r *http.Request, entity stri
 	err := s.deleteEntity(r, entity, id)
 	if errors.Is(err, domain.ErrInUse) {
 		if rerender != nil {
-			if rerr := rerender(); rerr == nil {
+			rerr := rerender()
+			if rerr == nil {
 				return
 			}
+			s.mutationFallback(w, r, rerr)
+			return
 		}
-		s.mutationFallback(w, r, nil)
+		s.mutationFallback(w, r, err)
 		return
 	}
 	if err != nil {
@@ -58,13 +61,13 @@ func (s *Server) relicCreate(w http.ResponseWriter, r *http.Request) {
 	st := formState(r, "name", "effect")
 	if f.str("name") == "" {
 		st.Errs = append(st.Errs, domain.FieldError{Field: "name", Msg: "name is required."})
-		relics, _ := s.st.ListRelics(r.Context())
+		relics := loadList(s.log, r.Context(), "relics", s.st.ListRelics)
 		renderPage(s.log, w, r, http.StatusUnprocessableEntity, ui.RelicsPage(relics, st))
 		return
 	}
 	if _, err := s.st.CreateRelic(r.Context(), domain.Relic{Name: f.str("name"), Effect: f.str("effect")}); err != nil {
 		st.Errs = append(st.Errs, domain.FieldError{Field: "name", Msg: "that name is taken."})
-		relics, _ := s.st.ListRelics(r.Context())
+		relics := loadList(s.log, r.Context(), "relics", s.st.ListRelics)
 		renderPage(s.log, w, r, http.StatusUnprocessableEntity, ui.RelicsPage(relics, st))
 		return
 	}
@@ -133,13 +136,13 @@ func (s *Server) patchCreate(w http.ResponseWriter, r *http.Request) {
 	st := formState(r, "version", "released_at")
 	if f.str("version") == "" {
 		st.Errs = append(st.Errs, domain.FieldError{Field: "version", Msg: "version is required."})
-		patches, _ := s.st.ListPatches(r.Context())
+		patches := loadList(s.log, r.Context(), "patches", s.st.ListPatches)
 		renderPage(s.log, w, r, http.StatusUnprocessableEntity, ui.PatchesPage(patches, st))
 		return
 	}
 	if _, err := s.st.CreatePatch(r.Context(), domain.Patch{Version: f.str("version"), ReleasedAt: f.str("released_at")}); err != nil {
 		st.Errs = append(st.Errs, domain.FieldError{Field: "version", Msg: "that version is taken."})
-		patches, _ := s.st.ListPatches(r.Context())
+		patches := loadList(s.log, r.Context(), "patches", s.st.ListPatches)
 		renderPage(s.log, w, r, http.StatusUnprocessableEntity, ui.PatchesPage(patches, st))
 		return
 	}
@@ -207,13 +210,13 @@ func (s *Server) proCreate(w http.ResponseWriter, r *http.Request) {
 	st := formState(r, "name", "handle", "peak_rank")
 	if f.str("name") == "" {
 		st.Errs = append(st.Errs, domain.FieldError{Field: "name", Msg: "name is required."})
-		pros, _ := s.st.ListPros(r.Context())
+		pros := loadList(s.log, r.Context(), "pros", s.st.ListPros)
 		renderPage(s.log, w, r, http.StatusUnprocessableEntity, ui.ProsPage(pros, st))
 		return
 	}
 	if _, err := s.st.CreatePro(r.Context(), domain.Pro{Name: f.str("name"), Handle: f.str("handle"), PeakRank: f.str("peak_rank")}); err != nil {
 		st.Errs = append(st.Errs, domain.FieldError{Field: "name", Msg: "that name is taken."})
-		pros, _ := s.st.ListPros(r.Context())
+		pros := loadList(s.log, r.Context(), "pros", s.st.ListPros)
 		renderPage(s.log, w, r, http.StatusUnprocessableEntity, ui.ProsPage(pros, st))
 		return
 	}
