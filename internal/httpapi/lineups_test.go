@@ -22,7 +22,9 @@ func TestUpdateLineup_Placement422PreservesTypedValues(t *testing.T) {
 	if !strings.Contains(body, `id="editform-`+l+`"`) {
 		t.Fatalf("422 must re-render the issuing edit form, got %s", body)
 	}
-	if !strings.Contains(body, `value="0"`) || !strings.Contains(body, `value="kept"`) {
+	// Anchor the typed 0 to the placement input: draws=0 and losses=0 also
+	// render value="0", so a bare value="0" match cannot fail on regression.
+	if !strings.Contains(body, `name="placement" min="1" max="8" value="0"`) || !strings.Contains(body, `value="kept"`) {
 		t.Fatalf("422 must preserve typed values, got %s", body)
 	}
 	if want := "placement must be between 1 and 8."; !strings.Contains(body, want) {

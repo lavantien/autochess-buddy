@@ -214,4 +214,18 @@ func TestDeleteRaceAndClassRoutes(t *testing.T) {
 	if rec.Code != http.StatusSeeOther {
 		t.Fatalf("in-use race delete status = %d, want pinned 303", rec.Code)
 	}
+	// The FK refuses the delete: the race must survive behind the hero.
+	races, err = f.st.ListRaces(context.Background())
+	if err != nil {
+		t.Fatalf("list races after refused delete: %v", err)
+	}
+	survived := false
+	for _, r := range races {
+		if r.ID == hero.Races[0].ID {
+			survived = true
+		}
+	}
+	if !survived {
+		t.Fatal("race row vanished behind an in-use hero despite the FK refusal")
+	}
 }
