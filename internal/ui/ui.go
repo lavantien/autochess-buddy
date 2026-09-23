@@ -66,7 +66,7 @@ func spreadTier(place int) string {
 	}
 }
 
-func codexEmpty(entity string) string {
+func CodexEmpty(entity string) string {
 	singular := strings.TrimSuffix(entity, "s")
 	if strings.HasSuffix(entity, "es") {
 		singular = strings.TrimSuffix(entity, "es")
