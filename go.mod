@@ -5,6 +5,7 @@ go 1.27.0
 require (
 	github.com/mattn/go-sqlite3 v1.14.52
 	github.com/pressly/goose/v3 v3.28.0
+	pgregory.net/rapid v1.3.0
 )
 
 require (
