@@ -53,6 +53,26 @@ func TestDashboard_FullPageVsPartialOnHXRequest(t *testing.T) {
 	}
 }
 
+// TestDashboard_PartialRouteNonHXRendersFullPage pins the fallback for the
+// filter endpoints: no HX-Request header means the whole page, never a bare
+// fragment.
+func TestDashboard_PartialRouteNonHXRendersFullPage(t *testing.T) {
+	h, st, _, _ := newDashTestServer(t)
+	if err := seed.Load(st.DB); err != nil {
+		t.Fatalf("seed: %v", err)
+	}
+	req := httptest.NewRequest(http.MethodGet, "/dashboard/heroes?patch=7.4", nil)
+	rec := httptest.NewRecorder()
+	h.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d", rec.Code)
+	}
+	body := rec.Body.String()
+	if !strings.Contains(body, "<!doctype html>") || strings.Contains(body, "hx-swap-oob") {
+		t.Fatal("non-hx partial route must render the full page without oob fragments")
+	}
+}
+
 func TestDashboard_FilterRidesQueryParams(t *testing.T) {
 	h, st, _, fake := newDashTestServer(t)
 	if err := seed.Load(st.DB); err != nil {

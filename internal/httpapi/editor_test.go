@@ -84,6 +84,41 @@ func (f editorFixture) post(t *testing.T, method, path, form string, hx bool) *h
 	return rec
 }
 
+// TestNonHX_EditorMutationsRedirect pins the fallback contract for every
+// editor mutation route: a plain request never sees a fragment, only a 303 to
+// the editor page. Cases run in an order that keeps the fixture valid.
+func TestNonHX_EditorMutationsRedirect(t *testing.T) {
+	f := seedEditor(t)
+	m := strconv.FormatInt(f.matchID, 10)
+	l := strconv.FormatInt(f.lineupID, 10)
+	sl := strconv.FormatInt(f.slotID, 10)
+	it := strconv.FormatInt(f.itemID, 10)
+	rl := strconv.FormatInt(f.relicID, 10)
+	cases := []struct{ name, method, path, form string }{
+		{"copy lineup", "POST", "/matches/" + m + "/lineups", "copy_from=" + l},
+		{"edit lineup", "POST", "/lineups/" + l, "match_id=" + m + "&placement=1&label=first&wins=1&draws=0&losses=0&networth=10"},
+		{"add hero", "POST", "/lineups/" + l + "/slots", "match_id=" + m + "&hero=" + f.heroName + "&stars=2"},
+		{"save stars", "POST", "/slots/" + sl, "match_id=" + m + "&stars=3"},
+		{"add item", "POST", "/slots/" + sl + "/items", "match_id=" + m + "&item=" + it},
+		{"remove item", "DELETE", "/slots/" + sl + "/items/" + it + "?match_id=" + m, ""},
+		{"add relic", "POST", "/lineups/" + l + "/relics", "match_id=" + m + "&relic=" + rl},
+		{"remove relic", "DELETE", "/lineups/" + l + "/relics/" + rl + "?match_id=" + m, ""},
+		{"delete slot", "DELETE", "/slots/" + sl + "?match_id=" + m, ""},
+		{"delete lineup", "DELETE", "/lineups/" + l + "?match_id=" + m, ""},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			rec := f.post(t, tc.method, tc.path, tc.form, false)
+			if rec.Code != http.StatusSeeOther {
+				t.Fatalf("status = %d, want 303: %s", rec.Code, rec.Body.String())
+			}
+			if loc := rec.Header().Get("Location"); !strings.HasSuffix(loc, "/edit") {
+				t.Fatalf("location = %q, want the editor page", loc)
+			}
+		})
+	}
+}
+
 func TestAddLineup_OOBResponseContainsCardsAndPips(t *testing.T) {
 	f := seedEditor(t)
 	rec := f.post(t, "POST", "/matches/"+strconv.FormatInt(f.matchID, 10)+"/lineups", "placement=2&label=second", true)

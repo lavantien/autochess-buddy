@@ -225,6 +225,30 @@ func TestSaveTier_422ScopedNamedAndKeepsTypedValues(t *testing.T) {
 	}
 }
 
+func TestDeleteHero_NonHXRedirectsToIndex(t *testing.T) {
+	f := seedCodexFix(t)
+	race, _ := f.st.CreateRace(context.Background(), domain.Race{Name: "elf"}, nil)
+	class, _ := f.st.CreateClass(context.Background(), domain.Class{Name: "hunter"}, nil)
+	id, err := f.st.CreateHero(context.Background(), domain.Hero{
+		Name: "dusk ranger", Cost: 3,
+		Races:   []domain.Race{{ID: race}},
+		Classes: []domain.Class{{ID: class}},
+	})
+	if err != nil {
+		t.Fatalf("create spare hero: %v", err)
+	}
+	req := httptest.NewRequest(http.MethodDelete, "/heroes/"+strconv.FormatInt(id, 10), nil)
+	req.Header.Set("Origin", "http://example.com")
+	rec := httptest.NewRecorder()
+	f.h.ServeHTTP(rec, req)
+	if rec.Code != http.StatusSeeOther {
+		t.Fatalf("status = %d, want 303: %s", rec.Code, rec.Body.String())
+	}
+	if loc := rec.Header().Get("Location"); loc != "/heroes" {
+		t.Fatalf("location = %q, want /heroes", loc)
+	}
+}
+
 // TestCodexIndexShowsSeededAnalytics pins the read-only columns on real data.
 func TestCodexIndexShowsSeededAnalytics(t *testing.T) {
 	h, st, _ := newTestServer(t)
