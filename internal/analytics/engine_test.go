@@ -57,12 +57,17 @@ func TestEngine_AttachesFixture(t *testing.T) {
 }
 
 // A single quote in the db path must survive the ATTACH string literal via SQL
-// doubling, else duckdb parses the statement apart.
+// doubling, else duckdb parses the statement apart. The row count also proves
+// the attach resolved the right file and the lazy sqlite open answers queries.
 func TestNew_QuoteInDbPathAttaches(t *testing.T) {
 	dbPath := filepath.Join(t.TempDir(), "qu'ote.db")
 	st, err := sqlite.Open(dbPath)
 	if err != nil {
 		t.Fatalf("open store: %v", err)
+	}
+	if err := seed.Load(st.DB); err != nil {
+		_ = st.Close()
+		t.Fatalf("seed: %v", err)
 	}
 	if err := st.Close(); err != nil {
 		t.Fatalf("close store: %v", err)
@@ -72,6 +77,9 @@ func TestNew_QuoteInDbPathAttaches(t *testing.T) {
 		t.Fatalf("new: %v", err)
 	}
 	t.Cleanup(func() { _ = e.Close() })
+	if got := countLineups(t, e); got != 36 {
+		t.Errorf("ac.lineups = %d rows through the quoted path, want 36", got)
+	}
 }
 
 func TestWriteThenRead_DuckdbSeesCommittedSqlite(t *testing.T) {
