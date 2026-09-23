@@ -20,20 +20,6 @@ func quietLog() *slog.Logger {
 	return slog.New(slog.NewTextHandler(io.Discard, nil))
 }
 
-// freeAddr reserves an ephemeral port and hands the address back for reuse.
-func freeAddr(t *testing.T) string {
-	t.Helper()
-	lis, err := net.Listen("tcp", "127.0.0.1:0")
-	if err != nil {
-		t.Fatalf("listen: %v", err)
-	}
-	addr := lis.Addr().String()
-	if err := lis.Close(); err != nil {
-		t.Fatalf("release probe port: %v", err)
-	}
-	return addr
-}
-
 func TestRunSeed_RoundTrip(t *testing.T) {
 	dbPath := filepath.Join(t.TempDir(), "app.db")
 	if err := runSeed(dbPath); err != nil {
@@ -56,11 +42,15 @@ func TestRunSeed_RoundTrip(t *testing.T) {
 func TestServe_BootsServesAndDrains(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	addr := freeAddr(t)
+	lis, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("listen: %v", err)
+	}
+	addr := lis.Addr().String()
 	dbPath := filepath.Join(t.TempDir(), "app.db")
 
 	errCh := make(chan error, 1)
-	go func() { errCh <- run(ctx, addr, dbPath, quietLog()) }()
+	go func() { errCh <- serve(ctx, lis, dbPath, quietLog()) }()
 
 	var resp *http.Response
 	deadline := time.Now().Add(15 * time.Second)
@@ -105,6 +95,9 @@ func TestServe_ReturnsListenError(t *testing.T) {
 	}
 	if errors.Is(err, http.ErrServerClosed) {
 		t.Fatalf("want a real listen error, got %v", err)
+	}
+	if !strings.Contains(err.Error(), "listen") {
+		t.Fatalf("err = %v, want the listen wrap", err)
 	}
 }
 
@@ -154,10 +147,47 @@ func TestRun_DirectoryAsDbFails(t *testing.T) {
 	}
 }
 
-func TestRun_QuoteInDbPathFailsDuckdbAttach(t *testing.T) {
-	dbPath := filepath.Join(t.TempDir(), "qu'ote.db")
-	err := run(context.Background(), "127.0.0.1:0", dbPath, quietLog())
-	if err == nil || !strings.Contains(err.Error(), "open duckdb") {
-		t.Fatalf("err = %v, want open duckdb failure", err)
+// A busy addr must fail at listen before either engine boots, so the error
+// names the listen step and never reaches sqlite.
+func TestRun_BoundAddrFailsBeforeEngines(t *testing.T) {
+	lis, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("listen: %v", err)
+	}
+	defer func() { _ = lis.Close() }()
+
+	err = run(context.Background(), lis.Addr().String(), t.TempDir(), quietLog())
+	if err == nil {
+		t.Fatal("want error when the addr is already bound")
+	}
+	if !strings.Contains(err.Error(), "listen") {
+		t.Fatalf("err = %v, want the listen wrap", err)
+	}
+	if strings.Contains(err.Error(), "open sqlite") {
+		t.Fatalf("err = %v, engines opened before the listen failure", err)
+	}
+}
+
+func TestServe_QuoteInDbPathBoots(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	lis, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("listen: %v", err)
+	}
+
+	errCh := make(chan error, 1)
+	go func() {
+		errCh <- serve(ctx, lis, filepath.Join(t.TempDir(), "qu'ote.db"), quietLog())
+	}()
+
+	cancel()
+	select {
+	case err := <-errCh:
+		if err != nil {
+			t.Fatalf("serve: %v", err)
+		}
+	case <-time.After(15 * time.Second):
+		t.Fatal("serve did not drain after ctx cancel")
 	}
 }

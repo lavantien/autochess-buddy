@@ -6,6 +6,7 @@ import (
 	"flag"
 	"fmt"
 	"log/slog"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
@@ -62,9 +63,20 @@ func runSeed(dbPath string) error {
 	return nil
 }
 
-// run wires both engines, serves until ctx cancels, and drains http first,
-// then duckdb, then sqlite (readme:211).
+// run binds addr before any engine boots, so a listen failure never pays for
+// two engine startups, then serves until ctx cancels.
 func run(ctx context.Context, addr, dbPath string, log *slog.Logger) error {
+	lis, err := net.Listen("tcp", addr)
+	if err != nil {
+		return fmt.Errorf("listen %s: %w", addr, err)
+	}
+	return serve(ctx, lis, dbPath, log)
+}
+
+// serve wires both engines on an already-bound listener, serves until ctx
+// cancels, and drains http first, then duckdb, then sqlite (readme:211).
+func serve(ctx context.Context, lis net.Listener, dbPath string, log *slog.Logger) error {
+	defer func() { _ = lis.Close() }() // Serve closes it too; the second close is a no-op error
 	if err := os.MkdirAll(filepath.Dir(dbPath), 0o755); err != nil {
 		return err
 	}
@@ -82,15 +94,14 @@ func run(ctx context.Context, addr, dbPath string, log *slog.Logger) error {
 	var dash analytics.Service = eng
 
 	srv := &http.Server{
-		Addr:              addr,
 		Handler:           httpapi.New(log, st, service.EntryService{St: st}, dash),
 		ReadHeaderTimeout: 5 * time.Second,
 	}
 
 	errCh := make(chan error, 1)
 	go func() {
-		log.Info("listening", "addr", addr)
-		errCh <- srv.ListenAndServe()
+		log.Info("listening", "addr", lis.Addr().String())
+		errCh <- srv.Serve(lis)
 	}()
 
 	select {

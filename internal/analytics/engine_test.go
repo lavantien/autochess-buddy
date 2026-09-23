@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"path/filepath"
+	"sync"
 	"testing"
 
 	"github.com/lavantien/autochess-buddy/internal/seed"
@@ -53,6 +54,24 @@ func TestEngine_AttachesFixture(t *testing.T) {
 	if got := countLineups(t, e); got != 36 {
 		t.Errorf("ac.lineups = %d rows, want 36", got)
 	}
+}
+
+// A single quote in the db path must survive the ATTACH string literal via SQL
+// doubling, else duckdb parses the statement apart.
+func TestNew_QuoteInDbPathAttaches(t *testing.T) {
+	dbPath := filepath.Join(t.TempDir(), "qu'ote.db")
+	st, err := sqlite.Open(dbPath)
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	if err := st.Close(); err != nil {
+		t.Fatalf("close store: %v", err)
+	}
+	e, err := New(dbPath, &sync.Mutex{})
+	if err != nil {
+		t.Fatalf("new: %v", err)
+	}
+	t.Cleanup(func() { _ = e.Close() })
 }
 
 func TestWriteThenRead_DuckdbSeesCommittedSqlite(t *testing.T) {

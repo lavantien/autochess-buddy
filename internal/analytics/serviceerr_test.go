@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"path/filepath"
 	"strings"
 	"sync"
 	"testing"
@@ -33,11 +32,12 @@ func TestRateZeroDenominator(t *testing.T) {
 
 // New must fail the ATTACH arm with a nil engine when the dbPath cannot build
 // a valid ATTACH statement, after sql.Open and the extension load succeeded.
-// The path is interpolated into the ATTACH string literal unescaped, so a
-// single quote in it breaks the parse at Exec time; a directory or a non-sqlite
-// file attach fine because duckdb opens the sqlite side lazily.
+// Quote characters are escaped (see TestNew_QuoteInDbPathAttaches), so the arm
+// is hit with a NUL byte: the cgo boundary truncates the statement there and
+// duckdb rejects the unterminated literal; a directory, a missing file, or a
+// non-sqlite file attach fine because duckdb opens the sqlite side lazily.
 func TestNewAttachFailure(t *testing.T) {
-	path := filepath.Join(t.TempDir(), "it's.db")
+	path := "no\x00such.db"
 
 	e, err := New(path, &sync.Mutex{})
 	if e != nil {
