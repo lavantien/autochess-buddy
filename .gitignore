@@ -3,3 +3,5 @@ data/*.db-journal
 node_modules/
 .superpowers/
 /autochess.exe
+/coverage.out
+/coverage.json

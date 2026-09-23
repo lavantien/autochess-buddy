@@ -6,7 +6,7 @@ BINARY := autochess.exe
 PKG ?= ./...
 RUN ?=
 
-.PHONY: build gen fmt lint vet test e2e playwright seed serve uiwatch dev shot check
+.PHONY: build gen fmt lint vet test cover badge e2e playwright seed serve uiwatch dev shot check
 
 build:
 	go build -o $(BINARY) ./cmd/autochess
@@ -26,6 +26,13 @@ vet:
 
 test:
 	go test $(RUN) $(PKG)
+
+cover:
+	go test -coverprofile=coverage.out -covermode=atomic ./...
+
+# badge: cover profile to shields json plus min coverage gate (ci publishes it)
+badge: cover
+	go run ./cmd/badge -skip _templ.go
 
 e2e:
 	go test -tags=e2e ./e2e/... -count=1 $(RUN)
