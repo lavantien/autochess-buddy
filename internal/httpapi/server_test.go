@@ -23,7 +23,7 @@ func TestRoutes_RegisterAllSpecPaths(t *testing.T) {
 		{"dashboard relic partial", "GET", "/dashboard/relics", http.StatusOK},
 		{"matches list", "GET", "/matches", http.StatusOK},
 		{"match create form", "GET", "/matches/new", http.StatusOK},
-		{"match create submit", "POST", "/matches/new", http.StatusSeeOther},
+		{"match create submit", "POST", "/matches/new", http.StatusUnprocessableEntity},
 		{"match detail", "GET", "/matches/14", http.StatusOK},
 		{"lineup editor", "GET", "/matches/14/edit", http.StatusOK},
 		{"add lineup card", "POST", "/matches/14/lineups", http.StatusSeeOther},

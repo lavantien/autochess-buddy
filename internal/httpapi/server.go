@@ -32,12 +32,11 @@ func New(log *slog.Logger, st *sqlite.Store, entry service.EntryService, dash an
 		http.Redirect(w, r, "/dashboard", http.StatusSeeOther)
 	})
 
-	dashEmpty := "no finalized matches for this filter yet. finalize a few matches first."
-	mux.HandleFunc("GET /dashboard", stubPage(log, "dashboard", "dashboard", dashEmpty))
-	mux.HandleFunc("GET /dashboard/heroes", stubPage(log, "dashboard", "hero performance", dashEmpty))
-	mux.HandleFunc("GET /dashboard/synergies", stubPage(log, "dashboard", "synergy lift", dashEmpty))
-	mux.HandleFunc("GET /dashboard/items", stubPage(log, "dashboard", "item lift", dashEmpty))
-	mux.HandleFunc("GET /dashboard/relics", stubPage(log, "dashboard", "relic lift", dashEmpty))
+	mux.HandleFunc("GET /dashboard", s.dashboardHome)
+	mux.HandleFunc("GET /dashboard/heroes", s.dashView("heroes"))
+	mux.HandleFunc("GET /dashboard/synergies", s.dashView("synergies"))
+	mux.HandleFunc("GET /dashboard/items", s.dashView("items"))
+	mux.HandleFunc("GET /dashboard/relics", s.dashView("relics"))
 
 	mux.HandleFunc("GET /heroes", s.heroIndex)
 	mux.HandleFunc("POST /heroes", s.heroCreate)
@@ -84,13 +83,10 @@ func New(log *slog.Logger, st *sqlite.Store, entry service.EntryService, dash an
 	mux.HandleFunc("POST /pros/{id}", s.proUpdate)
 	mux.HandleFunc("DELETE /pros/{id}", s.proDelete)
 
-	matchesEmpty := "no matches yet. start one from the game you just finished."
-	mux.HandleFunc("GET /matches", stubPage(log, "matches", "matches", matchesEmpty))
-	mux.HandleFunc("GET /matches/new", stubPage(log, "matches", "new match", matchesEmpty))
-	mux.HandleFunc("POST /matches/new", func(w http.ResponseWriter, r *http.Request) {
-		http.Redirect(w, r, "/matches", http.StatusSeeOther)
-	})
-	mux.HandleFunc("GET /matches/{id}", stubPage(log, "matches", "match", matchesEmpty))
+	mux.HandleFunc("GET /matches", s.matchList)
+	mux.HandleFunc("GET /matches/new", s.newMatchForm)
+	mux.HandleFunc("POST /matches/new", s.createMatch)
+	mux.HandleFunc("GET /matches/{id}", s.matchDetail)
 	mux.HandleFunc("GET /matches/{id}/edit", s.editorPage)
 	mux.HandleFunc("POST /matches/{id}/lineups", s.addLineup)
 	mux.HandleFunc("POST /matches/{id}/finalize", s.finalize)

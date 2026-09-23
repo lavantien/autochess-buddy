@@ -21,6 +21,12 @@ func quietLog() *slog.Logger {
 // newTestServer wires a real store and entry service over a temp db with a fake
 // analytics backend.
 func newTestServer(t *testing.T) (http.Handler, *sqlite.Store, service.EntryService) {
+	h, st, entry, _ := newDashTestServer(t)
+	return h, st, entry
+}
+
+// newDashTestServer also hands back the fake analytics for dashboard assertions.
+func newDashTestServer(t *testing.T) (http.Handler, *sqlite.Store, service.EntryService, *fakeAnalytics) {
 	t.Helper()
 	st, err := sqlite.Open(filepath.Join(t.TempDir(), "test.db"))
 	if err != nil {
@@ -28,32 +34,46 @@ func newTestServer(t *testing.T) (http.Handler, *sqlite.Store, service.EntryServ
 	}
 	t.Cleanup(func() { st.Close() })
 	entry := service.EntryService{St: st}
-	return New(quietLog(), st, entry, fakeAnalytics{}), st, entry
+	fake := &fakeAnalytics{}
+	return New(quietLog(), st, entry, fake), st, entry, fake
 }
 
-// fakeAnalytics stands in for the duckdb engine in handler tests.
-type fakeAnalytics struct{}
+// fakeAnalytics stands in for the duckdb engine in handler tests; its fields
+// feed the dashboard panel assertions.
+type fakeAnalytics struct {
+	heroRows    []analytics.HeroRow
+	viewCount   int
+	lastFilter  analytics.Filter
+	filterCalls int
+}
 
-func (fakeAnalytics) HeroPerformance(ctx context.Context, f analytics.Filter) ([]analytics.HeroRow, error) {
+func (f *fakeAnalytics) HeroPerformance(ctx context.Context, fl analytics.Filter) ([]analytics.HeroRow, error) {
+	f.lastFilter = fl
+	f.filterCalls++
+	return f.heroRows, nil
+}
+
+func (f *fakeAnalytics) SynergyPerformance(ctx context.Context, fl analytics.Filter) ([]analytics.SynergyRow, error) {
+	f.lastFilter = fl
 	return nil, nil
 }
 
-func (fakeAnalytics) SynergyPerformance(ctx context.Context, f analytics.Filter) ([]analytics.SynergyRow, error) {
+func (f *fakeAnalytics) ItemPerformance(ctx context.Context, fl analytics.Filter) ([]analytics.ItemRow, error) {
+	f.lastFilter = fl
 	return nil, nil
 }
 
-func (fakeAnalytics) ItemPerformance(ctx context.Context, f analytics.Filter) ([]analytics.ItemRow, error) {
+func (f *fakeAnalytics) RelicPerformance(ctx context.Context, fl analytics.Filter) ([]analytics.RelicRow, error) {
+	f.lastFilter = fl
 	return nil, nil
 }
 
-func (fakeAnalytics) RelicPerformance(ctx context.Context, f analytics.Filter) ([]analytics.RelicRow, error) {
+func (f *fakeAnalytics) NetworthByPlacement(ctx context.Context, fl analytics.Filter) ([]analytics.PlaceRow, error) {
+	f.lastFilter = fl
 	return nil, nil
 }
 
-func (fakeAnalytics) NetworthByPlacement(ctx context.Context, f analytics.Filter) ([]analytics.PlaceRow, error) {
-	return nil, nil
-}
-
-func (fakeAnalytics) LineupsInView(ctx context.Context, f analytics.Filter) (int, error) {
-	return 0, nil
+func (f *fakeAnalytics) LineupsInView(ctx context.Context, fl analytics.Filter) (int, error) {
+	f.lastFilter = fl
+	return f.viewCount, nil
 }
