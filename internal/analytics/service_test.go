@@ -107,7 +107,11 @@ func TestSynergyLift_Golden(t *testing.T) {
 	_, e := openAnalytics(t)
 	ctx := context.Background()
 
-	type key struct{ kind string; id int64; k int }
+	type key struct {
+		kind string
+		id   int64
+		k    int
+	}
 	rows, err := e.SynergyPerformance(ctx, Filter{})
 	if err != nil {
 		t.Fatal(err)
@@ -124,7 +128,12 @@ func TestSynergyLift_Golden(t *testing.T) {
 	}
 	field := 145.0 / 33.0
 	once := [8]int{1, 1, 1, 1, 1, 1, 1, 1}
-	heads := []struct{ kind string; id int64; name string; n int }{
+	heads := []struct {
+		kind string
+		id   int64
+		name string
+		n    int
+	}{
 		{"class", 1, "knight", 8}, {"class", 2, "assassin", 0}, {"class", 3, "druid", 1},
 		{"race", 1, "warrior", 8}, {"race", 2, "mage", 8}, {"race", 3, "beast", 8},
 	}

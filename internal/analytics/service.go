@@ -26,16 +26,16 @@ func (e *engine) HeroPerformance(ctx context.Context, f Filter) ([]HeroRow, erro
 	out := make([]HeroRow, len(raws))
 	for i, r := range raws {
 		out[i] = HeroRow{
-			Hero:         domain.Hero{ID: r.ID, Name: r.Name, Cost: r.Cost, Ability: r.Ability, Notes: r.Notes},
-			Picks:        r.Picks,
-			Top4:         r.Top4,
+			Hero:          domain.Hero{ID: r.ID, Name: r.Name, Cost: r.Cost, Ability: r.Ability, Notes: r.Notes},
+			Picks:         r.Picks,
+			Top4:          r.Top4,
 			LineupsInView: r.LineupsInView,
-			AvgPlace:     r.AvgPlace,
-			Finishes:     r.F,
-			PickRate:     rate(r.Picks, r.LineupsInView),
-			Top4Rate:     rate(r.Top4, r.Picks),
-			Floor:        domain.WilsonLB(r.Top4, r.Picks),
-			VsField:      r.AvgPlace - r.FieldAvg,
+			AvgPlace:      r.AvgPlace,
+			Finishes:      r.F,
+			PickRate:      rate(r.Picks, r.LineupsInView),
+			Top4Rate:      rate(r.Top4, r.Picks),
+			Floor:         domain.WilsonLB(r.Top4, r.Picks),
+			VsField:       r.AvgPlace - r.FieldAvg,
 		}
 	}
 	return out, nil
