@@ -42,7 +42,11 @@ templ matchesBody(rows []domain.MatchListRow, f domain.MatchFilter, patches []do
 			<button type="submit" class="button button-quiet">apply</button>
 		</form>
 		if len(rows) == 0 {
-			@EmptyState("no matches yet. start one from the game you just finished.", nil)
+			if f.Source != "" || f.State != "" || f.PatchID != 0 {
+				@EmptyState("no matches for this filter.", nil)
+			} else {
+				@EmptyState("no matches yet. start one from the game you just finished.", nil)
+			}
 		} else {
 			<table>
 				<thead><tr><th>state</th><th>played</th><th>patch</th><th>source</th><th>lineups</th><th>notes</th></tr></thead>

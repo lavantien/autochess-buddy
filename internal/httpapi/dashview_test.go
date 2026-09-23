@@ -83,11 +83,49 @@ func TestMatchList_PatchParamFiltersToPatchMatches(t *testing.T) {
 	unknown := httptest.NewRequest(http.MethodGet, "/matches?patch=9.9", nil)
 	rec = httptest.NewRecorder()
 	h.ServeHTTP(rec, unknown)
-	// Pinned quirk: an unmatched version leaves PatchID at 0, which the store
-	// treats as no filter, so every match stays visible.
+	// An unmatched version filters to nothing: the honest empty copy renders
+	// and no row from any patch sneaks in.
 	ubody := rec.Body.String()
-	if !strings.Contains(ubody, "3/8") || !strings.Contains(ubody, "1/1") {
-		t.Fatalf("unknown patch version must fall back to the unfiltered list, got %s", ubody[:min(500, len(ubody))])
+	if !strings.Contains(ubody, "no matches for this filter.") {
+		t.Fatalf("unknown patch version must render the filtered empty state, got %s", ubody[:min(500, len(ubody))])
+	}
+	if strings.Contains(ubody, "3/8") || strings.Contains(ubody, "1/1") {
+		t.Fatalf("unknown patch version must hide every row, got %s", ubody[:min(500, len(ubody))])
+	}
+}
+
+func TestMatchList_EmptyFilteredCopy(t *testing.T) {
+	h, st, _, _ := newDashTestServer(t)
+	if err := seed.Load(st.DB); err != nil {
+		t.Fatalf("seed: %v", err)
+	}
+	// Guard the premise against seed drift: every seeded me match is final, so
+	// me+draft matches zero rows.
+	mine, err := st.ListMatches(context.Background(), domain.MatchFilter{Source: "me", State: "draft"})
+	if err != nil || len(mine) != 0 {
+		t.Fatalf("seeded me+draft rows = %v, err %v; pick another combination", mine, err)
+	}
+	rec := httptest.NewRecorder()
+	h.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/matches?source=me&state=draft", nil))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d", rec.Code)
+	}
+	body := rec.Body.String()
+	if !strings.Contains(body, "no matches for this filter.") {
+		t.Fatalf("filtered empty state must name the filter, got %s", body[:min(500, len(body))])
+	}
+	if strings.Contains(body, "no matches yet. start one from the game you just finished.") {
+		t.Fatalf("filtered empty state must not use the unfiltered copy, got %s", body[:min(500, len(body))])
+	}
+
+	// Positive control: a filter with rows keeps rendering them.
+	rec = httptest.NewRecorder()
+	h.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/matches?source=me", nil))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d", rec.Code)
+	}
+	if got := rec.Body.String(); !strings.Contains(got, "1/1") {
+		t.Fatalf("source=me must still render its match row, got %s", got[:min(500, len(got))])
 	}
 }
 

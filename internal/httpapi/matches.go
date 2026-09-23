@@ -25,6 +25,12 @@ func (s *Server) matchList(w http.ResponseWriter, r *http.Request) {
 				break
 			}
 		}
+		if f.PatchID == 0 {
+			// PatchID 0 means unfiltered in the store; -1 matches no row so an
+			// unknown version filters to nothing instead of everything.
+			s.log.Warn("resolve patch filter", "version", version)
+			f.PatchID = -1
+		}
 	}
 	rows, err := s.st.ListMatches(r.Context(), f)
 	if err != nil {
