@@ -10,12 +10,13 @@ import (
 // EditorView is everything the match editor screen renders: the match, its lineups
 // deep-assembled, and the codex option lists the forms offer.
 type EditorView struct {
-	Match   domain.Match
-	Lineups []domain.Lineup
-	Heroes  []domain.Hero
-	Items   []domain.Item
-	Relics  []domain.Relic
-	Pros    []domain.Pro
+	Match        domain.Match
+	PatchVersion string
+	Lineups      []domain.Lineup
+	Heroes       []domain.Hero
+	Items        []domain.Item
+	Relics       []domain.Relic
+	Pros         []domain.Pro
 }
 
 // EntryService owns the match entry flows. Codex stays handler->store direct
@@ -156,6 +157,10 @@ func (s EntryService) Editor(ctx context.Context, matchID int64) (EditorView, er
 	if err != nil {
 		return EditorView{}, err
 	}
+	p, err := s.St.GetPatch(ctx, m.PatchID)
+	if err != nil {
+		return EditorView{}, err
+	}
 	heroes, err := s.St.ListHeroes(ctx)
 	if err != nil {
 		return EditorView{}, err
@@ -172,5 +177,5 @@ func (s EntryService) Editor(ctx context.Context, matchID int64) (EditorView, er
 	if err != nil {
 		return EditorView{}, err
 	}
-	return EditorView{Match: m, Lineups: lineups, Heroes: heroes, Items: items, Relics: relics, Pros: pros}, nil
+	return EditorView{Match: m, PatchVersion: p.Version, Lineups: lineups, Heroes: heroes, Items: items, Relics: relics, Pros: pros}, nil
 }

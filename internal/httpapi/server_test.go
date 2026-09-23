@@ -1,20 +1,14 @@
 package httpapi
 
 import (
-	"io"
-	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
 )
 
-func quietServer() http.Handler {
-	return New(slog.New(slog.NewTextHandler(io.Discard, nil)))
-}
-
 func TestRoutes_RegisterAllSpecPaths(t *testing.T) {
-	h := quietServer()
+	h, _, _ := newTestServer(t)
 	cases := []struct {
 		name   string
 		method string
@@ -91,7 +85,7 @@ func TestRoutes_RegisterAllSpecPaths(t *testing.T) {
 }
 
 func TestRoutes_RenderSpecEmptyStates(t *testing.T) {
-	h := quietServer()
+	h, _, _ := newTestServer(t)
 	cases := []struct {
 		path     string
 		contains string
@@ -112,14 +106,17 @@ func TestRoutes_RenderSpecEmptyStates(t *testing.T) {
 }
 
 func TestRoutes_HxMutationsReturnPlainStatus(t *testing.T) {
-	h := quietServer()
+	h, _, _ := newTestServer(t)
+	// Real handlers answer missing match context with a bare 422 (no fragments);
+	// codex stubs still answer 200 until their task lands.
 	cases := []struct {
 		method, path string
+		want         int
 	}{
-		{"POST", "/matches/14/lineups"},
-		{"POST", "/slots/3/items"},
-		{"DELETE", "/heroes/1"},
-		{"DELETE", "/slots/3"},
+		{"POST", "/matches/14/lineups", http.StatusUnprocessableEntity},
+		{"POST", "/slots/3/items", http.StatusUnprocessableEntity},
+		{"DELETE", "/heroes/1", http.StatusOK},
+		{"DELETE", "/slots/3", http.StatusUnprocessableEntity},
 	}
 	for _, c := range cases {
 		req := httptest.NewRequest(c.method, c.path, nil)
@@ -127,8 +124,8 @@ func TestRoutes_HxMutationsReturnPlainStatus(t *testing.T) {
 		req.Header.Set("Origin", "http://example.com")
 		rec := httptest.NewRecorder()
 		h.ServeHTTP(rec, req)
-		if rec.Code != http.StatusOK {
-			t.Fatalf("%s %s with HX-Request: status = %d, want 200", c.method, c.path, rec.Code)
+		if rec.Code != c.want {
+			t.Fatalf("%s %s with HX-Request: status = %d, want %d", c.method, c.path, rec.Code, c.want)
 		}
 	}
 }
