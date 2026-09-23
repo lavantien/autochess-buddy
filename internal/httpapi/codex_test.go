@@ -13,14 +13,8 @@ import (
 	"github.com/lavantien/autochess-buddy/internal/seed"
 )
 
-func seedCodexFix(t *testing.T) editorFixture {
-	t.Helper()
-	f := seedEditor(t)
-	return f
-}
-
 func TestCreateHero_303OnSuccess(t *testing.T) {
-	f := seedCodexFix(t)
+	f := seedEditor(t)
 	race, _ := f.st.CreateRace(context.Background(), domain.Race{Name: "elf"}, nil)
 	class, _ := f.st.CreateClass(context.Background(), domain.Class{Name: "hunter"}, nil)
 	form := "name=dusk ranger&cost=3&race1=" + strconv.FormatInt(race, 10) + "&class1=" + strconv.FormatInt(class, 10)
@@ -37,7 +31,7 @@ func TestCreateHero_303OnSuccess(t *testing.T) {
 }
 
 func TestCreateHero_422RerendersWithErrors(t *testing.T) {
-	f := seedCodexFix(t)
+	f := seedEditor(t)
 	// Cost out of range: the cost copy fires and values survive.
 	rec := f.post(t, "POST", "/heroes", "name=shade&cost=9", false)
 	if rec.Code != http.StatusUnprocessableEntity {
@@ -64,7 +58,7 @@ func TestCreateHero_422RerendersWithErrors(t *testing.T) {
 }
 
 func TestDeleteHero_HXRedirectHeader(t *testing.T) {
-	f := seedCodexFix(t)
+	f := seedEditor(t)
 	race, _ := f.st.CreateRace(context.Background(), domain.Race{Name: "elf"}, nil)
 	class, _ := f.st.CreateClass(context.Background(), domain.Class{Name: "hunter"}, nil)
 	id, err := f.st.CreateHero(context.Background(), domain.Hero{
@@ -93,7 +87,7 @@ func TestDeleteHero_HXRedirectHeader(t *testing.T) {
 }
 
 func TestDeleteHero_InUseRendersConflict(t *testing.T) {
-	f := seedCodexFix(t)
+	f := seedEditor(t)
 	// The fixture lineup holds grim jaw, so history refuses the delete.
 	h, _ := f.st.GetHeroByName(context.Background(), f.heroName)
 	path := "/heroes/" + strconv.FormatInt(h.ID, 10)
@@ -114,7 +108,7 @@ func TestDeleteHero_InUseRendersConflict(t *testing.T) {
 }
 
 func TestSaveTier_RoundTrip(t *testing.T) {
-	f := seedCodexFix(t)
+	f := seedEditor(t)
 	race, _ := f.st.CreateRace(context.Background(), domain.Race{Name: "human"}, nil)
 	post := func(vals ...string) *httptest.ResponseRecorder {
 		t.Helper()
@@ -146,7 +140,7 @@ func TestSaveTier_RoundTrip(t *testing.T) {
 }
 
 func TestProAndPatch_303And422Pairs(t *testing.T) {
-	f := seedCodexFix(t)
+	f := seedEditor(t)
 	// Pro pair.
 	if rec := f.post(t, "POST", "/pros", "name=drift&handle=drifttt&peak_rank=challenger", false); rec.Code != http.StatusSeeOther {
 		t.Fatalf("pro create status = %d, want 303: %s", rec.Code, rec.Body.String())
@@ -166,7 +160,7 @@ func TestProAndPatch_303And422Pairs(t *testing.T) {
 }
 
 func TestSynergyCreate_422NamesFieldAndKeepsValue(t *testing.T) {
-	f := seedCodexFix(t)
+	f := seedEditor(t)
 	rec := f.post(t, "POST", "/races", "name=", false)
 	if rec.Code != http.StatusUnprocessableEntity {
 		t.Fatalf("status = %d, want 422: %s", rec.Code, rec.Body.String())
@@ -193,7 +187,7 @@ func TestSynergyCreate_422NamesFieldAndKeepsValue(t *testing.T) {
 }
 
 func TestSynergyRename_422ScopedToItsLadder(t *testing.T) {
-	f := seedCodexFix(t)
+	f := seedEditor(t)
 	race, _ := f.st.CreateRace(context.Background(), domain.Race{Name: "human"}, nil)
 	rec := f.post(t, "POST", "/races/"+strconv.FormatInt(race, 10), "mode=save_name&name=beast", false)
 	if rec.Code != http.StatusUnprocessableEntity {
@@ -209,7 +203,7 @@ func TestSynergyRename_422ScopedToItsLadder(t *testing.T) {
 }
 
 func TestSaveTier_422ScopedNamedAndKeepsTypedValues(t *testing.T) {
-	f := seedCodexFix(t)
+	f := seedEditor(t)
 	race, _ := f.st.CreateRace(context.Background(), domain.Race{Name: "human"}, nil)
 	_, _ = f.st.CreateRace(context.Background(), domain.Race{Name: "beast"}, nil)
 	rec := f.post(t, "POST", "/races/"+strconv.FormatInt(race, 10), "mode=save_tier&count=0&effect=fury", false)
@@ -226,7 +220,7 @@ func TestSaveTier_422ScopedNamedAndKeepsTypedValues(t *testing.T) {
 }
 
 func TestDeleteHero_NonHXRedirectsToIndex(t *testing.T) {
-	f := seedCodexFix(t)
+	f := seedEditor(t)
 	race, _ := f.st.CreateRace(context.Background(), domain.Race{Name: "elf"}, nil)
 	class, _ := f.st.CreateClass(context.Background(), domain.Class{Name: "hunter"}, nil)
 	id, err := f.st.CreateHero(context.Background(), domain.Hero{

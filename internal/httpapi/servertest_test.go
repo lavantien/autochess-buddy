@@ -5,7 +5,9 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"net/http/httptest"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/lavantien/autochess-buddy/internal/domain"
@@ -36,6 +38,77 @@ func newDashTestServer(t *testing.T) (http.Handler, *sqlite.Store, service.Entry
 	entry := service.EntryService{St: st}
 	fake := &fakeAnalytics{}
 	return New(quietLog(), st, entry, fake), st, entry, fake
+}
+
+// editorFixture seeds one pro match with 1 lineup holding 1 hero and returns the
+// pieces the handler tests poke at.
+type editorFixture struct {
+	h        http.Handler
+	st       *sqlite.Store
+	entry    service.EntryService
+	matchID  int64
+	lineupID int64
+	slotID   int64
+	itemID   int64
+	relicID  int64
+	heroName string
+}
+
+func seedEditor(t *testing.T) editorFixture {
+	t.Helper()
+	h, st, entry := newTestServer(t)
+	ctx := context.Background()
+	patch, err := st.CreatePatch(ctx, domain.Patch{Version: "8.0", ReleasedAt: "2026-09-01"})
+	if err != nil {
+		t.Fatalf("patch: %v", err)
+	}
+	race, err := st.CreateRace(ctx, domain.Race{Name: "beast"}, nil)
+	if err != nil {
+		t.Fatalf("race: %v", err)
+	}
+	class, err := st.CreateClass(ctx, domain.Class{Name: "knight"}, nil)
+	if err != nil {
+		t.Fatalf("class: %v", err)
+	}
+	hero, err := st.CreateHero(ctx, domain.Hero{Name: "grim jaw", Cost: 2, Races: []domain.Race{{ID: race}}, Classes: []domain.Class{{ID: class}}})
+	if err != nil {
+		t.Fatalf("hero: %v", err)
+	}
+	itemID, err := st.CreateItem(ctx, domain.Item{Name: "storm core", Tier: 3}, nil)
+	if err != nil {
+		t.Fatalf("item: %v", err)
+	}
+	relicID, err := st.CreateRelic(ctx, domain.Relic{Name: "tide bell", Effect: "heal"})
+	if err != nil {
+		t.Fatalf("relic: %v", err)
+	}
+	matchID, err := entry.CreateMatch(ctx, domain.Match{PatchID: patch, PlayedAt: 1789000000, Source: "pro"})
+	if err != nil {
+		t.Fatalf("match: %v", err)
+	}
+	view, _, err := entry.AddLineup(ctx, matchID, domain.AddLineupCmd{
+		Label: "first", Placement: 1,
+		Slots: []domain.Slot{{SlotIndex: 0, Hero: domain.Hero{ID: hero}, Stars: 2, Items: []domain.Item{{ID: itemID}}}},
+	}, 0)
+	if err != nil {
+		t.Fatalf("lineup: %v", err)
+	}
+	return editorFixture{h: h, st: st, entry: entry, matchID: matchID,
+		lineupID: view.Lineups[0].ID, slotID: view.Lineups[0].Slots[0].ID,
+		itemID: itemID, relicID: relicID, heroName: "grim jaw"}
+}
+
+func (f editorFixture) post(t *testing.T, method, path, form string, hx bool) *httptest.ResponseRecorder {
+	t.Helper()
+	req := httptest.NewRequest(method, path, strings.NewReader(form))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Set("Origin", "http://example.com")
+	if hx {
+		req.Header.Set("HX-Request", "true")
+	}
+	rec := httptest.NewRecorder()
+	f.h.ServeHTTP(rec, req)
+	return rec
 }
 
 // fakeAnalytics stands in for the duckdb engine in handler tests; its fields
