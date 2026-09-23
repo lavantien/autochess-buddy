@@ -1169,7 +1169,7 @@ func SlotCell(view service.EditorView, l domain.Lineup, sl domain.Slot, st SlotF
 		var templ_7745c5c3_Var54 string
 		templ_7745c5c3_Var54, templ_7745c5c3_Err = templ.JoinStringErrs(sl.Hero.Name)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/editor.templ`, Line: 222, Col: 38}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/editor.templ`, Line: 223, Col: 41}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var54))
 		if templ_7745c5c3_Err != nil {
@@ -1220,7 +1220,7 @@ func SlotCell(view service.EditorView, l domain.Lineup, sl domain.Slot, st SlotF
 		var templ_7745c5c3_Var55 string
 		templ_7745c5c3_Var55, templ_7745c5c3_Err = templ.ResolveAttributeValue("/slots/" + itoa(sl.ID))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/editor.templ`, Line: 233, Col: 37}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/editor.templ`, Line: 235, Col: 37}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var55)
 		if templ_7745c5c3_Err != nil {
@@ -1233,7 +1233,7 @@ func SlotCell(view service.EditorView, l domain.Lineup, sl domain.Slot, st SlotF
 		var templ_7745c5c3_Var56 string
 		templ_7745c5c3_Var56, templ_7745c5c3_Err = templ.ResolveAttributeValue(itoa(view.Match.ID))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/editor.templ`, Line: 237, Col: 68}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/editor.templ`, Line: 239, Col: 68}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var56)
 		if templ_7745c5c3_Err != nil {
@@ -1261,7 +1261,7 @@ func SlotCell(view service.EditorView, l domain.Lineup, sl domain.Slot, st SlotF
 			var templ_7745c5c3_Var57 string
 			templ_7745c5c3_Var57, templ_7745c5c3_Err = templ.ResolveAttributeValue(itoa(int64(s)))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/editor.templ`, Line: 242, Col: 37}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/editor.templ`, Line: 244, Col: 37}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var57)
 			if templ_7745c5c3_Err != nil {
@@ -1284,7 +1284,7 @@ func SlotCell(view service.EditorView, l domain.Lineup, sl domain.Slot, st SlotF
 			var templ_7745c5c3_Var58 string
 			templ_7745c5c3_Var58, templ_7745c5c3_Err = templ.JoinStringErrs(s)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/editor.templ`, Line: 242, Col: 71}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/editor.templ`, Line: 244, Col: 71}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var58))
 			if templ_7745c5c3_Err != nil {
@@ -1307,7 +1307,7 @@ func SlotCell(view service.EditorView, l domain.Lineup, sl domain.Slot, st SlotF
 			var templ_7745c5c3_Var59 string
 			templ_7745c5c3_Var59, templ_7745c5c3_Err = templ.JoinStringErrs(st.BadMsg)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/editor.templ`, Line: 248, Col: 36}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/editor.templ`, Line: 250, Col: 36}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var59))
 			if templ_7745c5c3_Err != nil {
@@ -1325,7 +1325,7 @@ func SlotCell(view service.EditorView, l domain.Lineup, sl domain.Slot, st SlotF
 		var templ_7745c5c3_Var60 string
 		templ_7745c5c3_Var60, templ_7745c5c3_Err = templ.ResolveAttributeValue("/slots/" + itoa(sl.ID) + "/items")
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/editor.templ`, Line: 253, Col: 48}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/editor.templ`, Line: 255, Col: 48}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var60)
 		if templ_7745c5c3_Err != nil {
@@ -1338,7 +1338,7 @@ func SlotCell(view service.EditorView, l domain.Lineup, sl domain.Slot, st SlotF
 		var templ_7745c5c3_Var61 string
 		templ_7745c5c3_Var61, templ_7745c5c3_Err = templ.ResolveAttributeValue(itoa(view.Match.ID))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/editor.templ`, Line: 257, Col: 68}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/editor.templ`, Line: 259, Col: 68}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var61)
 		if templ_7745c5c3_Err != nil {
@@ -1366,7 +1366,7 @@ func SlotCell(view service.EditorView, l domain.Lineup, sl domain.Slot, st SlotF
 			var templ_7745c5c3_Var62 string
 			templ_7745c5c3_Var62, templ_7745c5c3_Err = templ.ResolveAttributeValue(itoa(it.ID))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/editor.templ`, Line: 262, Col: 34}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/editor.templ`, Line: 264, Col: 34}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var62)
 			if templ_7745c5c3_Err != nil {
@@ -1379,7 +1379,7 @@ func SlotCell(view service.EditorView, l domain.Lineup, sl domain.Slot, st SlotF
 			var templ_7745c5c3_Var63 string
 			templ_7745c5c3_Var63, templ_7745c5c3_Err = templ.JoinStringErrs(it.Name)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/editor.templ`, Line: 262, Col: 46}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/editor.templ`, Line: 264, Col: 46}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var63))
 			if templ_7745c5c3_Err != nil {
@@ -1402,7 +1402,7 @@ func SlotCell(view service.EditorView, l domain.Lineup, sl domain.Slot, st SlotF
 			var templ_7745c5c3_Var64 string
 			templ_7745c5c3_Var64, templ_7745c5c3_Err = templ.JoinStringErrs(st.BadMsg)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/editor.templ`, Line: 268, Col: 36}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/editor.templ`, Line: 270, Col: 36}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var64))
 			if templ_7745c5c3_Err != nil {
@@ -1420,7 +1420,7 @@ func SlotCell(view service.EditorView, l domain.Lineup, sl domain.Slot, st SlotF
 		var templ_7745c5c3_Var65 string
 		templ_7745c5c3_Var65, templ_7745c5c3_Err = templ.ResolveAttributeValue("/slots/" + itoa(sl.ID) + "?match_id=" + itoa(view.Match.ID))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/editor.templ`, Line: 273, Col: 76}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/editor.templ`, Line: 275, Col: 76}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var65)
 		if templ_7745c5c3_Err != nil {
@@ -1462,7 +1462,7 @@ func removeItemForm(view service.EditorView, lineupID, slotID, itemID int64) tem
 		var templ_7745c5c3_Var67 string
 		templ_7745c5c3_Var67, templ_7745c5c3_Err = templ.ResolveAttributeValue("/slots/" + itoa(slotID) + "/items/" + itoa(itemID) + "?match_id=" + itoa(view.Match.ID))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/editor.templ`, Line: 288, Col: 102}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/editor.templ`, Line: 290, Col: 102}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var67)
 		if templ_7745c5c3_Err != nil {
@@ -1504,7 +1504,7 @@ func HeroForm(view service.EditorView, l domain.Lineup, st HeroFormState, oob bo
 		var templ_7745c5c3_Var69 string
 		templ_7745c5c3_Var69, templ_7745c5c3_Err = templ.ResolveAttributeValue("heroform-" + itoa(l.ID))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/editor.templ`, Line: 298, Col: 31}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/editor.templ`, Line: 300, Col: 31}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var69)
 		if templ_7745c5c3_Err != nil {
@@ -1527,7 +1527,7 @@ func HeroForm(view service.EditorView, l domain.Lineup, st HeroFormState, oob bo
 		var templ_7745c5c3_Var70 string
 		templ_7745c5c3_Var70, templ_7745c5c3_Err = templ.ResolveAttributeValue("/lineups/" + itoa(l.ID) + "/slots")
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/editor.templ`, Line: 303, Col: 47}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/editor.templ`, Line: 305, Col: 47}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var70)
 		if templ_7745c5c3_Err != nil {
@@ -1540,7 +1540,7 @@ func HeroForm(view service.EditorView, l domain.Lineup, st HeroFormState, oob bo
 		var templ_7745c5c3_Var71 string
 		templ_7745c5c3_Var71, templ_7745c5c3_Err = templ.ResolveAttributeValue(itoa(view.Match.ID))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/editor.templ`, Line: 307, Col: 66}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/editor.templ`, Line: 309, Col: 66}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var71)
 		if templ_7745c5c3_Err != nil {
@@ -1553,7 +1553,7 @@ func HeroForm(view service.EditorView, l domain.Lineup, st HeroFormState, oob bo
 		var templ_7745c5c3_Var72 string
 		templ_7745c5c3_Var72, templ_7745c5c3_Err = templ.ResolveAttributeValue("herolist-" + itoa(l.ID))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/editor.templ`, Line: 311, Col: 34}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/editor.templ`, Line: 313, Col: 34}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var72)
 		if templ_7745c5c3_Err != nil {
@@ -1566,7 +1566,7 @@ func HeroForm(view service.EditorView, l domain.Lineup, st HeroFormState, oob bo
 		var templ_7745c5c3_Var73 string
 		templ_7745c5c3_Var73, templ_7745c5c3_Err = templ.ResolveAttributeValue(st.Hero)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/editor.templ`, Line: 313, Col: 18}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/editor.templ`, Line: 315, Col: 18}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var73)
 		if templ_7745c5c3_Err != nil {
@@ -1589,7 +1589,7 @@ func HeroForm(view service.EditorView, l domain.Lineup, st HeroFormState, oob bo
 		var templ_7745c5c3_Var74 string
 		templ_7745c5c3_Var74, templ_7745c5c3_Err = templ.ResolveAttributeValue("herolist-" + itoa(l.ID))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/editor.templ`, Line: 317, Col: 41}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/editor.templ`, Line: 319, Col: 41}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var74)
 		if templ_7745c5c3_Err != nil {
@@ -1607,7 +1607,7 @@ func HeroForm(view service.EditorView, l domain.Lineup, st HeroFormState, oob bo
 			var templ_7745c5c3_Var75 string
 			templ_7745c5c3_Var75, templ_7745c5c3_Err = templ.ResolveAttributeValue(h.Name)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/editor.templ`, Line: 319, Col: 26}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/editor.templ`, Line: 321, Col: 26}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var75)
 			if templ_7745c5c3_Err != nil {
@@ -1630,7 +1630,7 @@ func HeroForm(view service.EditorView, l domain.Lineup, st HeroFormState, oob bo
 			var templ_7745c5c3_Var76 string
 			templ_7745c5c3_Var76, templ_7745c5c3_Err = templ.ResolveAttributeValue(itoa(int64(s)))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/editor.templ`, Line: 326, Col: 35}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/editor.templ`, Line: 328, Col: 35}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var76)
 			if templ_7745c5c3_Err != nil {
@@ -1653,7 +1653,7 @@ func HeroForm(view service.EditorView, l domain.Lineup, st HeroFormState, oob bo
 			var templ_7745c5c3_Var77 string
 			templ_7745c5c3_Var77, templ_7745c5c3_Err = templ.JoinStringErrs(s)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/editor.templ`, Line: 326, Col: 112}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/editor.templ`, Line: 328, Col: 112}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var77))
 			if templ_7745c5c3_Err != nil {
@@ -1676,7 +1676,7 @@ func HeroForm(view service.EditorView, l domain.Lineup, st HeroFormState, oob bo
 			var templ_7745c5c3_Var78 string
 			templ_7745c5c3_Var78, templ_7745c5c3_Err = templ.JoinStringErrs(st.Err)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/editor.templ`, Line: 332, Col: 31}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/editor.templ`, Line: 334, Col: 31}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var78))
 			if templ_7745c5c3_Err != nil {
@@ -1723,7 +1723,7 @@ func RelicsRegion(view service.EditorView, l domain.Lineup, st RelicState, oob b
 		var templ_7745c5c3_Var80 string
 		templ_7745c5c3_Var80, templ_7745c5c3_Err = templ.ResolveAttributeValue("relics-" + itoa(l.ID))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/editor.templ`, Line: 339, Col: 29}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/editor.templ`, Line: 341, Col: 29}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var80)
 		if templ_7745c5c3_Err != nil {
@@ -1776,7 +1776,7 @@ func RelicsRegion(view service.EditorView, l domain.Lineup, st RelicState, oob b
 		var templ_7745c5c3_Var81 string
 		templ_7745c5c3_Var81, templ_7745c5c3_Err = templ.ResolveAttributeValue("/lineups/" + itoa(l.ID) + "/relics")
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/editor.templ`, Line: 355, Col: 50}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/editor.templ`, Line: 357, Col: 50}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var81)
 		if templ_7745c5c3_Err != nil {
@@ -1789,7 +1789,7 @@ func RelicsRegion(view service.EditorView, l domain.Lineup, st RelicState, oob b
 		var templ_7745c5c3_Var82 string
 		templ_7745c5c3_Var82, templ_7745c5c3_Err = templ.ResolveAttributeValue(itoa(view.Match.ID))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/editor.templ`, Line: 359, Col: 68}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/editor.templ`, Line: 361, Col: 68}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var82)
 		if templ_7745c5c3_Err != nil {
@@ -1817,7 +1817,7 @@ func RelicsRegion(view service.EditorView, l domain.Lineup, st RelicState, oob b
 			var templ_7745c5c3_Var83 string
 			templ_7745c5c3_Var83, templ_7745c5c3_Err = templ.ResolveAttributeValue(itoa(r.ID))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/editor.templ`, Line: 364, Col: 33}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/editor.templ`, Line: 366, Col: 33}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var83)
 			if templ_7745c5c3_Err != nil {
@@ -1830,7 +1830,7 @@ func RelicsRegion(view service.EditorView, l domain.Lineup, st RelicState, oob b
 			var templ_7745c5c3_Var84 string
 			templ_7745c5c3_Var84, templ_7745c5c3_Err = templ.JoinStringErrs(r.Name)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/editor.templ`, Line: 364, Col: 44}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/editor.templ`, Line: 366, Col: 44}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var84))
 			if templ_7745c5c3_Err != nil {
@@ -1853,7 +1853,7 @@ func RelicsRegion(view service.EditorView, l domain.Lineup, st RelicState, oob b
 			var templ_7745c5c3_Var85 string
 			templ_7745c5c3_Var85, templ_7745c5c3_Err = templ.JoinStringErrs(st.Err)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/editor.templ`, Line: 370, Col: 33}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/editor.templ`, Line: 372, Col: 33}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var85))
 			if templ_7745c5c3_Err != nil {
@@ -1900,7 +1900,7 @@ func removeRelicForm(view service.EditorView, lineupID, relicID int64) templ.Com
 		var templ_7745c5c3_Var87 string
 		templ_7745c5c3_Var87, templ_7745c5c3_Err = templ.ResolveAttributeValue("/lineups/" + itoa(lineupID) + "/relics/" + itoa(relicID) + "?match_id=" + itoa(view.Match.ID))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/editor.templ`, Line: 380, Col: 108}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/ui/editor.templ`, Line: 382, Col: 108}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var87)
 		if templ_7745c5c3_Err != nil {

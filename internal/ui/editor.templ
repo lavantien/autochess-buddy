@@ -218,8 +218,10 @@ templ GridRegion(view service.EditorView, l domain.Lineup, st SlotFormState, oob
 
 templ SlotCell(view service.EditorView, l domain.Lineup, sl domain.Slot, st SlotFormState) {
 	<div id={ "slot-" + itoa(sl.ID) } class="slot">
-		<span class="slot-top">@RarityDot(sl.Hero.Cost)
-<span class="slot-name">{ sl.Hero.Name }</span></span>
+		<span class="slot-top">
+			@RarityDot(sl.Hero.Cost)
+			<span class="slot-name">{ sl.Hero.Name }</span>
+		</span>
 		@StarPips(sl.Stars)
 		<div class="chips">
 			for _, it := range sl.Items {

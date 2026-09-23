@@ -26,7 +26,10 @@ templ heroesBody(rows []sqlite.HeroStats, races []domain.Race, classes []domain.
 				for _, r := range rows {
 					<tr>
 						<td><a href={ "/heroes/" + itoa(r.Hero.ID) }>{ r.Hero.Name }</a></td>
-						<td>@RarityDot(r.Hero.Cost)<span class="cost">{ r.Hero.Cost }</span></td>
+						<td>
+							@RarityDot(r.Hero.Cost)
+							<span class="cost">{ r.Hero.Cost }</span>
+						</td>
 						<td>{ lineageNames(r.Hero.Races) }</td>
 						<td>{ lineageNamesC(r.Hero.Classes) }</td>
 						<td>{ itoa(int64(r.Lineups)) }</td>

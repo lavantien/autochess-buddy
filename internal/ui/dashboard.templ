@@ -15,7 +15,8 @@ templ dashBody(view string, patches []domain.Patch, patchVersion string, f analy
 		<form class="filterrow" method="get" action={ "/dashboard/" + view }>
 			<label>
 				<span>patch</span>
-				<select name="patch"
+				<select
+					name="patch"
 					hx-get={ "/dashboard/" + view }
 					hx-target={ "#dashpanel-" + view }
 					hx-swap="outerHTML"
@@ -32,7 +33,8 @@ templ dashBody(view string, patches []domain.Patch, patchVersion string, f analy
 			</label>
 			<label>
 				<span>source</span>
-				<select name="source"
+				<select
+					name="source"
 					hx-get={ "/dashboard/" + view }
 					hx-target={ "#dashpanel-" + view }
 					hx-swap="outerHTML"
@@ -91,14 +93,19 @@ templ HeroTable(rows []analytics.HeroRow, places []analytics.PlaceRow) {
 			<tbody>
 				for _, r := range rows {
 					<tr>
-						<td>@RarityDot(r.Hero.Cost)<span class="slot-name">{ r.Hero.Name }</span></td>
+						<td>
+							@RarityDot(r.Hero.Cost)
+							<span class="slot-name">{ r.Hero.Name }</span>
+						</td>
 						<td>{ num(float64(r.Hero.Cost)) }</td>
 						<td>{ pct(r.PickRate) }</td>
 						<td>{ pct(r.Top4Rate) }</td>
 						<td>{ pct(r.Floor) }</td>
 						<td>{ num(r.AvgPlace) }</td>
 						<td>{ signed(r.VsField) }</td>
-						<td>@SpreadBar(r.Finishes)</td>
+						<td>
+							@SpreadBar(r.Finishes)
+						</td>
 					</tr>
 				}
 			</tbody>
@@ -141,7 +148,9 @@ templ SynergyTable(rows []analytics.SynergyRow) {
 						<td>{ itoa(int64(r.TierCount)) }</td>
 						<td>{ itoa(int64(r.Lineups)) }</td>
 						<td>{ signed(r.Lift) }</td>
-						<td>@SpreadBar(r.Finishes)</td>
+						<td>
+							@SpreadBar(r.Finishes)
+						</td>
 					</tr>
 				}
 			</tbody>
@@ -162,7 +171,9 @@ templ ItemTable(rows []analytics.ItemRow) {
 						<td>{ r.Item.Name }</td>
 						<td>{ itoa(int64(r.SlotsWith)) }</td>
 						<td>{ signed(r.Lift) }</td>
-						<td>@SpreadBar(r.Finishes)</td>
+						<td>
+							@SpreadBar(r.Finishes)
+						</td>
 					</tr>
 				}
 			</tbody>
@@ -183,7 +194,9 @@ templ RelicTable(rows []analytics.RelicRow) {
 						<td>{ r.Relic.Name }</td>
 						<td>{ itoa(int64(r.Lineups)) }</td>
 						<td>{ signed(r.Lift) }</td>
-						<td>@SpreadBar(r.Finishes)</td>
+						<td>
+							@SpreadBar(r.Finishes)
+						</td>
 					</tr>
 				}
 			</tbody>
