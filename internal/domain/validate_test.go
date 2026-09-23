@@ -151,3 +151,31 @@ func TestParsePlayedAt_RejectsGarbage(t *testing.T) {
 		}
 	}
 }
+
+func TestValidateFinalize_RejectsUnknownSource(t *testing.T) {
+	for _, src := range []string{"solo", ""} {
+		want := `source must be me or pro, got "` + src + `"`
+		if err := ValidateFinalize(Match{Source: src}, nil); err == nil || err.Error() != want {
+			t.Errorf("source %q: err = %v, want %q", src, err, want)
+		}
+	}
+}
+
+func TestValidateFinalize_ProPlacementRange(t *testing.T) {
+	for _, bad := range [][]int{
+		{0, 2, 3, 4, 5, 6, 7, 8},
+		{1, 2, 3, 4, 5, 6, 7, 9},
+	} {
+		if err := ValidateFinalize(Match{Source: "pro"}, lineupsPlaced(bad...)); !errors.Is(err, ErrProFinalize) {
+			t.Errorf("placements %v: err = %v, want ErrProFinalize", bad, err)
+		}
+	}
+}
+
+func TestValidationError_JoinsFields(t *testing.T) {
+	v := ValidationError{{Field: "placement", Msg: "needs 1 to 8"}, {Field: "label", Msg: "required"}}
+	want := "placement: needs 1 to 8, label: required"
+	if got := v.Error(); got != want {
+		t.Errorf("ValidationError.Error() = %q, want %q", got, want)
+	}
+}
