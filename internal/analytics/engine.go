@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"path/filepath"
+	"strings"
 	"sync"
 
 	_ "github.com/duckdb/duckdb-go/v2"
@@ -37,7 +38,9 @@ func New(dbPath string, mu *sync.Mutex) (*engine, error) {
 			return nil, errors.Join(errFirstRun, err)
 		}
 	}
-	attach := fmt.Sprintf(`ATTACH '%s' AS ac (TYPE SQLITE, READ_ONLY)`, filepath.ToSlash(dbPath))
+	// duckdb follows standard SQL: a single quote inside the literal is doubled.
+	attach := fmt.Sprintf(`ATTACH '%s' AS ac (TYPE SQLITE, READ_ONLY)`,
+		strings.ReplaceAll(filepath.ToSlash(dbPath), "'", "''"))
 	if _, err := db.Exec(attach); err != nil {
 		_ = db.Close()
 		return nil, fmt.Errorf("attach %s: %w", dbPath, err)

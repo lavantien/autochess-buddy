@@ -154,10 +154,35 @@ func TestRun_DirectoryAsDbFails(t *testing.T) {
 	}
 }
 
-func TestRun_QuoteInDbPathFailsDuckdbAttach(t *testing.T) {
+func TestRun_QuoteInDbPathBootsAndDrains(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	addr := freeAddr(t)
 	dbPath := filepath.Join(t.TempDir(), "qu'ote.db")
-	err := run(context.Background(), "127.0.0.1:0", dbPath, quietLog())
-	if err == nil || !strings.Contains(err.Error(), "open duckdb") {
-		t.Fatalf("err = %v, want open duckdb failure", err)
+
+	errCh := make(chan error, 1)
+	go func() { errCh <- run(ctx, addr, dbPath, quietLog()) }()
+
+	deadline := time.Now().Add(15 * time.Second)
+	for {
+		resp, err := http.Get("http://" + addr + "/dashboard")
+		if err == nil {
+			_ = resp.Body.Close()
+			break
+		}
+		if time.Now().After(deadline) {
+			t.Fatalf("server never answered /dashboard: %v", err)
+		}
+		time.Sleep(50 * time.Millisecond)
+	}
+
+	cancel()
+	select {
+	case err := <-errCh:
+		if err != nil {
+			t.Fatalf("run: %v", err)
+		}
+	case <-time.After(15 * time.Second):
+		t.Fatal("run did not drain after ctx cancel")
 	}
 }
