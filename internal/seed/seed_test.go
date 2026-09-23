@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/lavantien/autochess-buddy/internal/store/sqlite"
@@ -116,5 +117,47 @@ func TestSeed_GoldenSpot(t *testing.T) {
 	}
 	if avg != 4.5 {
 		t.Errorf("grim jaw avg placement = %g, want exactly 4.5", avg)
+	}
+}
+
+func TestSeed_BeginTxError(t *testing.T) {
+	s, err := sqlite.Open(filepath.Join(t.TempDir(), "test.db"))
+	if err != nil {
+		t.Fatalf("open: %v", err)
+	}
+	if err := s.Close(); err != nil {
+		t.Fatalf("close: %v", err)
+	}
+	if err := Load(s.DB); err == nil || !strings.Contains(err.Error(), "closed") {
+		t.Errorf("Load on closed db: err = %v, want closed-database error", err)
+	}
+}
+
+func TestSeed_ExecErrorRollsBack(t *testing.T) {
+	s, err := sqlite.Open(filepath.Join(t.TempDir(), "test.db"))
+	if err != nil {
+		t.Fatalf("open: %v", err)
+	}
+	t.Cleanup(func() { _ = s.Close() })
+	const abortMsg = "seed-test blocked heroes insert"
+	if _, err := s.DB.Exec(`CREATE TRIGGER block_heroes BEFORE INSERT ON heroes BEGIN SELECT RAISE(ABORT, '` + abortMsg + `'); END`); err != nil {
+		t.Fatalf("create trigger: %v", err)
+	}
+	err = Load(s.DB)
+	if err == nil {
+		t.Fatal("Load with blocked heroes insert: nil error, want failure")
+	}
+	if errors.Is(err, ErrSeeded) {
+		t.Errorf("Load failure misread as ErrSeeded: %v", err)
+	}
+	if !strings.Contains(err.Error(), abortMsg) {
+		t.Errorf("Load error = %v, want trigger abort %q", err, abortMsg)
+	}
+	var n int
+	if err := s.DB.QueryRowContext(context.Background(), `SELECT count(*) FROM matches`).Scan(&n); err != nil {
+		t.Fatalf("count matches: %v", err)
+	}
+	if n != 0 {
+		t.Errorf("matches count after failed Load = %d, want 0 (rolled back)", n)
 	}
 }
