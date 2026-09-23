@@ -202,7 +202,7 @@ concrete sqlite types with database/sql and mattn/go-sqlite3, no interface cerem
 
 thin, only where more than a single store call happens:
 
-- entry service: create shell match, append lineup cards one form at a time, finalize enforces the source lineup counts and distinct placements in one tx
+- entry service: create shell match, append lineup cards one form at a time, edit lineup scalars and slot stars, remove items and relics, finalize enforces the source lineup counts and distinct placements in one tx
 - analytics orchestration: apply filters (patch, source), run catalogue queries, map rows to view models. all math stays in sql, go only assembles
 - codex crud goes handler to store directly, no pass-through service
 
@@ -214,6 +214,7 @@ net/http with go 1.27 method patterns, html only. hx-request header present mean
 |---|---|---|
 | GET | / | dashboard landing |
 | GET/POST | /heroes, /heroes/{id} | codex crud (same pattern for races, classes, items, relics, patches, pros) |
+| DELETE | /heroes/{id} | codex delete (same pattern for races, classes, items, relics, patches, pros) |
 | GET | /matches | list, filters, n/8 draft badge |
 | GET/POST | /matches/new | create shell, redirect to edit |
 | GET | /matches/{id} | detail |
@@ -224,6 +225,10 @@ net/http with go 1.27 method patterns, html only. hx-request header present mean
 | POST | /slots/{id}/items | attach item |
 | POST | /lineups/{id}/relics | attach relic |
 | DELETE | /slots/{id}, /lineups/{id} | remove with htmx swap |
+| POST | /lineups/{id} | edit lineup scalars (label, pro, placement, w-d-l, networth) |
+| POST | /slots/{id} | edit slot stars |
+| DELETE | /slots/{id}/items/{itemId} | remove item |
+| DELETE | /lineups/{id}/relics/{relicId} | remove relic |
 | GET | /dashboard | overview |
 | GET | /dashboard/heroes | hero performance partial |
 | GET | /dashboard/synergies | race and class lift partial |
@@ -231,7 +236,7 @@ net/http with go 1.27 method patterns, html only. hx-request header present mean
 
 #### layer 5: ui
 
-templ base layout, page templates, small components in internal/ui. htmx 4.0.0 vendored as a static file since npm latest still points at 2.x. one hand written dark stylesheet, tables and forms only. full frontend spec with tokens, wireframes, and the htmx swap map: frontend-design.md. lineup entry is incremental: each lineup card is its own small form so placement conflicts surface per card through the unique constraint and no 100-field atomic submit exists, a duplicate-lineup button copies the previous card since adjacent placements share most pieces, match lists show n/8 so partial entry is a resting state, stars default to 2. hero picker is a select with datalist search, no per-keystroke server calls, no client js beyond htmx. deletes use hx-delete with hx-confirm.
+templ base layout, page templates, small components in internal/ui. htmx 4.0.0 vendored as a static file since npm latest still points at 2.x. one hand written dark stylesheet, tables and forms only. full frontend spec with tokens, wireframes, and the htmx swap map: frontend-design.md. lineup entry is incremental: every control on a lineup card is its own small sibling form, never nested, so placement conflicts surface per card through the unique constraint and no 100-field atomic submit exists, a duplicate-lineup button copies the previous card since adjacent placements share most pieces, match lists show n/8 so partial entry is a resting state, stars default to 2. hero picker is an input with datalist search, no per-keystroke server calls, no client js beyond htmx. deletes use hx-delete with hx-confirm.
 
 #### layer 6: analytics
 

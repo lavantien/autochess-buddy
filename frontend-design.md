@@ -6,22 +6,22 @@ autochess companion is a localhost tool for one person: a player of auto chess (
 
 hard constraints from the architecture (readme layer 5):
 
-- server rendered templ components, htmx 4 vendored, no client js beyond htmx
+- server rendered templ components, htmx 4 vendored, no client js beyond htmx and its own attribute hooks
 - one hand written dark stylesheet, tables and forms only, no css framework, no build step
-- hero picker is a select with datalist, no per keystroke server calls
-- incremental lineup entry, each lineup card is its own form
+- hero picker is an input with datalist, no per keystroke server calls
+- incremental lineup entry, every control on a lineup card is its own small sibling form
 - deletes use hx-delete with hx-confirm
 
 ## direction
 
-the design borrows the game's own vernacular. auto chess is an 8 player auto battler with a dark stone board, a gold economy, a cost 1 to 5 rarity ladder, and a post match scoreboard that ranks 8 players. so: the lineup editor is rendered as the game's end of match scoreboard, a horizontal strip of 8 rank ordered lineup cards with big placement numerals. placement is a real ordinal, the numerals are data, not decoration. every other screen stays quiet: dense tables on flat bordered panels.
+the design borrows the game's own vernacular. auto chess is an 8 player auto battler with a dark stone board, a gold economy, a cost 1 to 5 rarity ladder, and a post match scoreboard that ranks 8 players. the match detail page opens with that scoreboard: a compact strip of 8 summary cards ranked by placement. the editor works vertically, a 2 column grid of full lineup cards in placement order with big placement numerals, because entry is sequential work and horizontal scrolling between forms would cost more than the motif earns. placement is a real ordinal, the numerals are data, not decoration. every other screen stays quiet: dense tables on flat bordered panels.
 
 principles:
 
 - color carries game meaning only. gold is the single accent (economy, victory, 5 cost, primary actions). the rarity ladder is the only multicolor system and it marks hero identity and cost, nothing else
 - tables are the design. the dashboard, the codex, and the match list are ranked tables, no chart library, bars are css widths inside cells
-- entry speed beats polish. defaults match the common case: stars 2, the copy button duplicates the previous card, placement conflicts surface on the card that caused them
-- one bold spend. the lobby strip is the memorable element, everything around it is disciplined
+- entry speed beats polish. defaults match the common case: stars 2, placement prefills the first free slot, the copy button duplicates the previous board, placement conflicts surface on the card that caused them, and every mistake has a local correction path
+- one accent moment: the scoreboard strip. everything else stays flat
 
 ## tokens
 
@@ -30,12 +30,12 @@ principles:
 | token | hex | use |
 |---|---|---|
 | ink | #12161C | page background, dark blue slate like the board stone |
-| panel | #1A212A | raised surfaces: cards, forms, table headers on hover |
+| panel | #1A212A | raised surfaces: cards, forms, table rows on hover |
 | line | #2A3542 | 1px borders, table rules |
 | chalk | #E9E4D6 | primary text, warm white like the white pieces |
 | slate | #9AA4B0 | muted text, table headers, secondary labels |
 | gold | #D9A441 | the accent: primary buttons, active nav, 1st place, 5 cost |
-| rust | #C25B4C | destructive actions |
+| rust | #D08075 | destructive actions and field error text |
 
 rarity ladder, semantic only, always paired with the cost digit:
 
@@ -47,13 +47,13 @@ rarity ladder, semantic only, always paired with the cost digit:
 | 4 | #9B6FD9 |
 | 5 | #D9A441 (gold) |
 
-computed contrast: chalk on ink 14.3:1, gold on ink 8.1:1, slate on panel 6.4:1, ink on gold 8.1:1. all pairs pass wcag aa, chalk and gold pairs pass aaa for large text.
+one placement coding everywhere (numerals, summary cards, table bars): 1st gold, placements 2 to 4 light, placements 5 to 8 dim. bar hexes are precomputed, never opacity blends: light #7F8892, dim #656F7B.
 
-placement color coding: 1st carries gold, placements 2 to 4 render chalk, 5 to 8 render slate. the numeral itself is always shown, color never carries the rank alone.
+computed contrast: chalk on ink 14.3:1, gold on ink 8.1:1, slate on panel 6.4:1, ink on gold 8.1:1, rust on ink 6.1:1, rust on panel 5.4:1. all text pairs pass wcag aa, chalk gold and rust pass aaa for large text. the bar hexes clear the 3:1 graphics minimum on ink: light 5.1:1, dim 3.6:1.
 
 ### type
 
-two roles, one family, distinct through width:
+2 roles, one family, distinct through width:
 
 - barlow condensed 600 and 700: page titles, placement numerals, nav, badges, buttons, table headers
 - barlow 400 and 500: body, forms, table cells, chips
@@ -96,20 +96,40 @@ slim top bar, condensed 600 nav, current section underlined in gold. codex pages
 ### dashboard
 
 ```
-patch [7.5 v]  source [pro v]          124 lineups in view
+patch [7.5 v]  source [pro v]          120 lineups in view
 
 hero performance
 
 hero           cost  pick    top 4   floor   avg   vs field  finishes
-sky breaker     5    41.2%   63.4%  55.1%   3.8    -0.6     [#::::::.]
-grim jaw        4    38.7%   60.2%  53.8%   4.0    -0.4     [##:::::.]
-lord of sand    2    21.0%   48.9%  44.0%   4.5    +0.1     [#::::::.]
+sky breaker     5    41.2%   63.4%  55.1%   3.8    -0.7     [#::::::.]
+grim jaw        4    38.7%   60.2%  53.8%   4.5     0.0     [##:::::.]
+lord of sand    2    21.0%   48.9%  44.0%   5.2    +0.7     [#::::::.]
 ```
 
-- filter row is a plain form, submit reloads the page, filters ride query params (`/dashboard/heroes?patch=7.5&source=pro`)
-- the finishes cell is a 72 by 10px bar of 8 segments, one per placement, segment width is the share of finishes at that placement, segment 1 gold, 2 to 4 slate at 80 percent, 5 to 8 slate at 40 percent
+- the filter row submits with hx-get on change, targets the table panel (`hx-target`, `hx-push-url`), so the url keeps the filter and the table swaps as a partial. this is the read path the readme partial routes exist for (`/dashboard/heroes?patch=7.5&source=pro`)
+- sample numbers honor the invariants: a pro filter yields a lineup count divisible by 8 and a field average of exactly 4.5, so every mock shows one
+- the finishes cell is a 72 by 10px bar of 8 segments, one per placement, segment width is the share of finishes at that placement, colors from the single placement coding (gold, light, dim). each bar carries an aria-label with all 8 shares
 - a metric legend sits under the section title, always visible, plain words (see copy)
-- synergy, item, and relic tables repeat this shape: name, sample size, lift, finishes bar
+- the synergy table is one row per (synergy, tier), because lift is a function of the tier count:
+
+```
+synergy   tier  lineups  lift   finishes
+warrior   2     98       -0.3   [#::::::.]
+warrior   4     61       -0.8   [##:::::.]
+warrior   6     12       -1.1   [###::::.]
+human     2     88       +0.2   [#:::::::]
+```
+
+- item and relic tables repeat the row shape: name, sample size, lift, finishes bar
+- networth by placement is a compact table at the bottom: placement, average networth, n. it closes the readme metric list
+
+```
+place  avg networth  n
+1      63            15
+2      61            15
+...
+```
+
 - empty state when a filter has no finalized matches: "no finalized matches for this filter yet. finalize a few matches first."
 
 ### matches list
@@ -117,64 +137,72 @@ lord of sand    2    21.0%   48.9%  44.0%   4.5    +0.1     [#::::::.]
 ```
 matches                                                    [new match]
 
+patch [all v]  source [all v]  state [all v]
+
 state   played             patch  source  lineups         notes
 draft   2026-09-22 20:14   7.5    pro     [###.....] 3/8  vic lobby
 final   2026-09-21 21:02   7.5    me      [#]        1/1  ranked grind
 final   2026-09-20 22:40   7.4    pro     [########] 8/8  ghost cup
 ```
 
+- the filter row is a plain GET form, filters ride query params
 - the pips component shows one box per required lineup, 8 for pro matches, 1 for my matches, filled per entered lineup, with the n/8 count as text next to it
 - draft rows link to the editor, final rows link to the match detail
 - new match goes to a small form: patch select, source select (me, pro), played at datetime local, notes, then [create match]
 
-### match editor, the lobby strip
+### match editor
 
 ```
 edit match  patch 7.5  source pro       [###.....] 3/8  [finalize match]
 
-+--------+ +--------+ +--------+ +--------------------+
-|      1 | |      2 | |      3 | | add lineup        |
-| vic    | | ghost  | | huan   | | placement [   4 ] |
-| 7-2-1  | | 6-3-1  | | 5-4-2  | | pro       [ v   ] |
-| nw 61  | | nw 58  | | nw 49  | | label     [     ] |
-| board  | | board  | | board  | | [add lineup]      |
-+--------+ +--------+ +--------+ +--------------------+
++-------------------------------+  +-------------------------------+
+| 1   vic     [edit]            |  | 2   ghost   [edit]            |
+| w-d-l 7-2-1      nw 61        |  | w-d-l 6-3-1      nw 58        |
+| board grid                    |  | board grid                    |
+| [copy]            [delete]    |  | [copy]            [delete]    |
++-------------------------------+  +-------------------------------+
+                                               +-------------------------------+
+                                               | add lineup                    |
+                                               | placement [ 4 ]  pro [none v] |
+                                               | label      [             ]    |
+                                               | w [ ]  d [ ]  l [ ]  nw [  ]  |
+                                               | [add lineup]                  |
+                                               +-------------------------------+
 ```
 
-- cards sit in placement order, the strip scrolls horizontally when it overflows
-- the add card is a permanent last card holding one small form: placement number, pro select or label, [add lineup]
-- each lineup card carries a copy button that posts to the same add route with `copy_from` set, the server clones that card's heroes, stars, items, and relics, placement increments to the first free slot. adjacent placements share most pieces, this is the fastest path through 8 cards
+- cards sit in a 2 column grid on wide viewports, placement ordered because the server renders the order, 1 column below 900px. the add card is the last grid cell
+- the add card form collects everything the schema needs: placement (prefilled with the first free placement), pro select with a none option, label, wins, draws, losses, networth, [add lineup]
+- display name precedence: the pro name when a pro is set, otherwise the label
+- each lineup card carries a copy button that posts to the same add route with `copy_from` set. the server clones heroes, stars, items, relics, and label, sets placement to the first free slot, and resets pro, w-d-l, and networth to defaults. adjacent placements share boards, not players
+- the edit disclosure on each card opens the same scalar fields prefilled ([save lineup]) for after the fact fixes
 - the header pips and n/8 count update after every add and delete
 - finalize is a plain form post, no htmx: it is the terminal action, the server answers 303 to the match detail, the browser navigates. on rule failure the editor rerenders with the error banner naming the missing lineups or the duplicate placement
 
 ### lineup card anatomy
 
 ```
-+-------------------------------+
-|                           1   |   placement numeral, condensed 700
-| vic  peak: king               |   pro handle or label, slate
-| w-d-l  7-2-1       nw 61      |   numbers right aligned
-| relics  [cursed blade] [ + ]  |   chips plus add disclosure
-| +-------------+-------------+ |
-| | o grim jaw      ( * * - ) | |   rarity dot, name, star pips
-| |   void stone, fist        | |   item chips
-| +-------------+-------------+ |
-| | o dusk ranger    ( - - - )| |
-| |   + item                  | |   per slot disclosure
-| +-------------+-------------+ |
-|   grid is 4 x 3, 12 slots    |
-| +-------------+-------------+ |
-| | add hero: [grim j..] *2v*  | |   datalist search, stars default 2
-| +-------------+-------------+ |
-| [copy]            [delete]    |
-+-------------------------------+
++---------------------------------------------------------------+
+| 1   vic  peak: king                        [edit]              |
+|     w-d-l 7-2-1      networth 61                               |
+|     relics  [cursed blade x] [war horn x] [+ relic]            |
+| +------------+------------+------------+------------+          |
+| | o grim jaw    * * - 2/3 | | o dusk ranger   - - - 1/3        |
+| |   [void stone x] [fist x]| |   empty slot placeholder         |
+| |   + slot details        | |                                  |
+| +------------+------------+------------+------------+          |
+|   grid is 4 x 3, 12 cells, empty cells render as dashed        |
+|   placeholders, filled cells never move position               |
+| add hero: [type a hero name] stars [2 v]  [add hero]           |
+| [copy]                                              [delete]   |
++---------------------------------------------------------------+
 ```
 
-- the slot grid is 4 columns by 3 rows, one slot per hero, empty slots render a quiet add hero control in place
-- star pips are 3 small marks, filled count is the star level, always next to the hero name
-- item attach is a native `details` disclosure inside the slot cell: item select, [add item]. no js
-- the relics row holds relic chips and one `details` disclosure with a relic select, [add relic]
-- the add hero row pins to the card bottom: datalist input filtered by the browser, stars select defaulting to 2, [add hero]
+- the slot grid is 4 columns by 3 rows and always renders 12 cells. empty cells are static dashed placeholders. filled cells stay in their cell position until deleted, which returns the placeholder
+- the add hero row pins to the card bottom: input with datalist filtered by the browser, stars select defaulting to 2, [add hero]. it is the single add hero mechanism
+- every control on the card is its own small sibling form element, never nested, each carrying its own ids as hidden inputs
+- each filled slot has one slot details disclosure (native `details`) holding all slot operations: stars select with [save stars], item select with [add item], and the item chips each with a remove x. no js
+- star level renders as 3 pip marks plus the text "n/3" beside them, so the level survives low vision and screen readers
+- the relics row holds relic chips, each with a remove x, and one details disclosure with a relic select, [add relic]
 - copy and delete sit in the card footer, delete asks first (see copy)
 
 ### codex
@@ -187,19 +215,26 @@ grim jaw       4    human        warrior       38      4.0
 dusk ranger    3    elf, beast   hunter        21      4.4
 ```
 
-- `+ new hero` opens a `details` create form above the table: name, cost select 1 to 5, race 1 plus optional race 2, class 1 plus optional class 2, ability, notes, [save hero]
-- each row links to an edit page (`/heroes/{id}`) with the same form prefilled plus [delete hero]
-- items, relics, patches, pros repeat the pattern with their own fields
-- synergies shows two columns, races and classes, each entry is a tier ladder:
+- codex forms are plain full page posts with 303 redirects, no htmx, matching the handler to store path in the architecture
+- field lists, one per entity, straight from the schema:
+  - hero: name, cost 1 to 5, race 1 plus optional race 2, class 1 plus optional class 2, ability, notes. the race and class selects are populated by the synergies tab, so a fresh install creates races and classes first
+  - item: name, tier, effect, components (multi select over items, the recipe picker)
+  - relic: name, effect
+  - patch: version, released at
+  - pro: name, handle, peak rank
+  - race and class: name, managed on the synergies tab
+- the synergies tab manages races and classes, not just displays them. each entry is a tier ladder editor: count, effect, per tier [save tier] rows, plus [delete tier]
 
 ```
 races                        classes
-human                        warrior
-  2   all humans +10% atk     2   warriors +30 armor
-  4   all humans +25% atk     4   warriors +70 armor
-  6   all humans +45% atk     6   warriors +120 armor
+human                [edit]  warrior               [edit]
+  2   all humans +10% atk    2   warriors +30 armor
+  4   all humans +25% atk    4   warriors +70 armor
+  6   all humans +45% atk    6   warriors +120 armor
 ```
 
+- `+ new hero` opens a `details` create form above the table with the hero fields, [save hero]
+- each row links to an edit page (`/heroes/{id}`) with the same form prefilled plus [delete hero]
 - codex tables show read only analytics columns (lineups, avg place) so the codex doubles as a slow dashboard for entry sanity
 
 ### match detail
@@ -207,28 +242,54 @@ human                        warrior
 ```
 match 14  patch 7.5  pro  finalized 2026-09-22
 
-(strip of 8 read only lineup cards, same anatomy, no forms)
++----+ +----+ +----+ +----+ +----+ +----+ +----+ +----+
+|  1 | |  2 | |  3 | |  4 | |  5 | |  6 | |  7 | |  8 |
+| vic| |ghst| |huan| | ... placement summary cards ... |
+|61nw| |58nw| |49nw| |    | |    | |    | |    | |    |
++----+ +----+ +----+ +----+ +----+ +----+ +----+ +----+
+
+(boards below, read only, same anatomy as the editor, no forms)
 
 notes  vic lobby, ghost went 8th rolling warriors
 ```
 
-## htmx swap map
+- the scoreboard strip is the accent moment: 8 compact summary cards (placement numeral, display name, w-d-l, networth) in one row, ranked, no boards
+- the full boards below render read only in the same 2 column grid as the editor
+
+## the swap contract
 
 htmx 4 facts this relies on, verified 2026-09-23: error responses swap by default, `hx-swap-oob` still exists and the main swap runs before oob swaps, `hx-confirm` is still core, attribute inheritance is opt-in so every interaction attribute goes on the element itself, `hx-disabled-elt` was renamed to `hx-disable`.
 
-| action | request | response | target | mechanism |
-|---|---|---|---|---|
-| add lineup | POST /matches/{id}/lineups | lineup card partial + updated pips | strip card container | `hx-post` with `hx-swap="beforeend"`, pips via `hx-swap-oob` |
-| copy lineup | POST /matches/{id}/lineups + copy_from | same as add | same | same |
-| add hero slot | POST /lineups/{id}/slots | slot cell partial | slot grid | `hx-swap="beforeend"` |
-| add item | POST /slots/{id}/items | slot cell partial | the slot cell | `hx-swap="outerHTML"` |
-| add relic | POST /lineups/{id}/relics | relic chip partial | relic row | `hx-swap="beforeend"` |
-| delete slot | DELETE /slots/{id} | 200 empty body | slot cell | `hx-swap="delete"` |
-| delete lineup | DELETE /lineups/{id} | empty + updated pips | the card | `hx-swap="delete"`, pips oob |
-| validation error | same as the action | 422 field error partial | the form that submitted | htmx 4 swaps error responses by default |
-| finalize | POST /matches/{id}/finalize | 303 redirect | none | plain form, full navigation |
+one rule covers every mutation, so there is exactly one mechanism to wire and review:
 
-non-hx requests to any route get the full page, per the readme http contract.
+- every mutating control posts with `hx-swap="none"`
+- the response is a set of out of band `outerHTML` fragments. each fragment carries the stable id of the region it replaces. the server owns rendered state: it re-sorts the cards, resets the issuing form, refreshes the pips, and redraws the affected grid
+- on success the issuing form rerenders reset (placement prefill advances, datalist input clears)
+- on 422 the issuing form rerenders with entered values preserved and inline errors under the first bad field
+- every mutating submit control carries `hx-disable` (the htmx 4 rename) so double submits are blocked at the control, and the unique placement constraint backs it up server side
+
+stable ids: `cards-{matchId}`, `pips-{matchId}`, `addform-{matchId}`, `card-{lineupId}`, `editform-{lineupId}`, `grid-{lineupId}`, `relics-{lineupId}`, `slot-{slotId}`, `dashpanel-{view}`. every oob fragment uses the id of the element it replaces.
+
+| action | request | oob fragments in the response | focus after |
+|---|---|---|---|
+| add lineup | POST /matches/{id}/lineups | cards, pips, addform (reset) | new card add hero input |
+| copy lineup | POST /matches/{id}/lineups + copy_from | cards, pips, addform (reset) | new card add hero input |
+| edit lineup scalars | POST /lineups/{id} | card, plus cards and pips when placement changed | edit disclosure |
+| add hero | POST /lineups/{id}/slots | grid, addform row (reset) | add hero input stays |
+| save stars | POST /slots/{id} | grid | slot details disclosure |
+| add item | POST /slots/{id}/items | grid (details rendered open) | item select |
+| remove item | DELETE /slots/{id}/items/{itemId} | grid | slot details disclosure |
+| add relic | POST /lineups/{id}/relics | relics | relic select |
+| remove relic | DELETE /lineups/{id}/relics/{relicId} | relics | relic disclosure |
+| delete slot | DELETE /slots/{id} | grid | previous focusable in the card |
+| delete lineup | DELETE /lineups/{id} | cards, pips | next card, else the add form |
+| validation error | any mutation above | the issuing form with values and errors | first errored field |
+| codex save or delete | POST or DELETE codex routes | none, plain post, 303 redirect | n/a |
+| finalize | POST /matches/{id}/finalize | none, plain post, 303 redirect | n/a |
+
+focus movement is part of the contract, not decoration: htmx swaps that destroy or replace the focused control drop focus to the body, so after-swap focus is wired with htmx's own `hx-on` hooks per the table above. this is the only permitted wiring beyond declarative attributes.
+
+non-hx requests to any route get the full page or a redirect, per the readme http contract.
 
 ## components and states
 
@@ -236,17 +297,18 @@ non-hx requests to any route get the full page, per the readme http contract.
 - pips: n boxes 10 by 10px, filled boxes gold, count text beside
 - placement numeral: condensed 700 28px, gold when 1, chalk 2 to 4, slate 5 to 8
 - rarity dot: 8px circle in the cost color, always adjacent to the cost digit and hero name
-- star pips: 3 marks 6px, filled count is star level
-- chips: panel fill, 1px line border, 3px radius, 13px text. item chips and relic chips look identical, the row label distinguishes them
+- star pips: 3 marks 6px plus the text "n/3", filled count is star level
+- chips: panel fill, 1px line border, 3px radius, 13px text, each with a remove x mini form. item chips and relic chips look identical, the row label distinguishes them
 - tables: condensed 600 13px slate headers, 2px bottom rule in line color, 40px rows, right aligned numeric cells, row hover lifts background to panel
-- bars: the finishes cell described in the dashboard section
-- busy: buttons dim and disable while their request is in flight, driven by the htmx request classes, no extra attributes to maintain
+- bars: the finishes cell described in the dashboard section, aria-label carries the 8 shares
+- disclosures: native `details` elements for slot operations, relic add, lineup edit, and codex create forms
+- busy: every mutating control carries `hx-disable`, the dim rides the htmx request classes
 - empty states: one sentence naming the next action, plus the primary button when a route exists
 - field errors: inline under the field, rust text, naming the field and the fix. form rerenders preserve entered values
 
 ## motion
 
-one settle animation: a partial appended by htmx fades in and drops 4px over 160ms during the htmx settle phase. everything else is instant. `prefers-reduced-motion: reduce` disables the settle and every transition.
+one settle animation: a rerendered region fades in and drops 4px over 160ms during the htmx settle phase. everything else is instant. `prefers-reduced-motion: reduce` disables the settle and every transition.
 
 ## copy
 
@@ -260,21 +322,27 @@ fixed labels:
 | add lineup card | add lineup | |
 | duplicate card | copy | |
 | add hero slot | add hero | |
+| save stars | save stars | |
+| edit lineup scalars | edit, save lineup | |
 | attach item | add item | |
 | attach relic | add relic | |
-| save codex row | save hero, save item, save relic, save patch, save pro | |
+| remove item or relic | x on the chip, no confirm, easily re-added | |
+| save codex row | save hero, save item, save relic, save patch, save pro, save tier | |
 | finalize | finalize match | |
 | delete lineup | delete | delete this lineup? its heroes and items go with it. |
 | delete slot | delete | remove this hero from the lineup? |
-| delete codex row | delete hero, delete item, delete relic | delete grim jaw? matches keep their history |
+| delete codex row | delete hero, delete item, delete relic, delete patch, delete pro, delete race, delete class | delete grim jaw? existing matches keep their history. |
 
 metric legend, shown on the dashboard:
 
 - pick rate: share of lineups in view that played the hero
-- top 4: share of lineups finishing 1st through 4th
-- floor: the cautious reading of top 4, with the lineups on hand the true rate could be as low as this
-- avg place: mean finishing placement, lower is better
+- top 4: of the lineups playing this hero, the share finishing 1st through 4th
+- floor: the cautious reading of top 4, a wilson 95 percent lower bound, with the lineups on hand the true rate could be as low as this
+- avg place: mean finishing placement of the lineups playing the hero, lower is better
 - vs field: difference from the average placement of all lineups in the same filter, negative is better
+- synergy lift: for a race or class at tier count k, average placement of lineups with at least k units minus the field average, negative is better
+- item lift: average placement of slots holding the item minus the average placement of the same hero in slots without it, negative is better
+- relic lift: same shape over the lineups holding the relic
 
 empty states:
 
@@ -287,17 +355,19 @@ error examples:
 - "placement 4 is already used by another lineup in this match."
 - "a lineup holds at most 12 heroes."
 - "a slot holds at most 6 items."
+- "no hero named x in the codex. add it first."
 - "a pro match needs 8 lineups with placements 1 through 8 before it can be finalized."
 
 ## accessibility floor
 
 - visible focus everywhere: 2px gold outline, 2px offset, on `:focus-visible`
+- focus is managed across swaps per the swap contract table, because a swap that eats the focused control otherwise strands keyboard users at the page top
 - every control has a visible label, no placeholder standing in for one
-- placement and rarity never rely on color alone: the numeral and cost digit always render
+- placement, rarity, and star level never rely on color alone: the numeral, cost digit, and "n/3" text always render, bars carry aria-labels
 - contrast pairs and ratios listed in the tokens section
 - reduced motion respected, see motion
 - tables use `th scope`, forms use `label for`
-- at 720px and below: the strip stacks vertically, the slot grid drops to 2 columns, tables scroll horizontally inside their panel, touch targets grow to 44px
+- at 900px and below: editor and detail grids drop to 1 column, the slot grid keeps 4 columns until 720px then drops to 2, tables scroll horizontally inside their panel, touch targets grow to 44px
 
 ## implementation notes
 
@@ -312,11 +382,11 @@ internal/ui/static/
     barlow-condensed-700.woff2
 ```
 
-- tokens are css custom properties on `:root` (`--ink`, `--panel`, `--line`, `--chalk`, `--slate`, `--gold`, `--rust`, `--c1` through `--c5`), components consume tokens only
+- tokens are css custom properties on `:root` (`--ink`, `--panel`, `--line`, `--chalk`, `--slate`, `--gold`, `--rust`, `--c1` through `--c5`, `--place-light`, `--place-dim`), components consume tokens only
 - component classes named by role: `topbar`, `strip`, `lcard`, `slot`, `chip`, `pip`, `spread`, `legend`. no utility classes, no cascade deeper than 2 levels
 - templ components mirror the component inventory one to one (Button, Pips, LineupCard, SlotCell, Chip, SpreadBar, MetricLegend), so the spec and the code stay in lockstep
 - numbers are formatted in go before they reach templates, templates never compute
-- attribute names in the swap map were checked against htmx 4 docs, confirm against the vendored file once when wiring node C
+- the swap contract is the single wiring surface: one rule, the id list, the focus table. attribute names were checked against htmx 4 docs, confirm against the vendored file once when wiring
 - css is hand written and stays under the 400 sloc budget by keeping the component count low: if a new visual need appears, extend an existing component before adding one
 
 ## design self-check
@@ -328,6 +398,6 @@ rejected generic tells, kept here as the checklist for future ui work:
 - the saas card kit, uniform rounded cards with soft shadows: flat bordered panels, hierarchy from borders
 - broadsheet hairlines with zero radius everywhere: 3px radius where fingers click, heavier rules under table headers
 - all caps tracked eyebrows, meta strings joined with middle dots, arrow suffixes on links, mono faces for small labels: all dropped
-- fade and slide entrances on every section: one settle on appended cards only
+- fade and slide entrances on every section: one settle on rerendered regions only
 
-future ui changes re-run this list before shipping.
+this spec survived 2 independent adversarial review passes (usability and accessibility, htmx feasibility and voice) on 2026-09-23. future ui changes re-run this list and a review pass before shipping.
