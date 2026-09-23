@@ -60,7 +60,11 @@ func (s *Store) ListItems(ctx context.Context) ([]domain.Item, error) {
 // UpdateItem rewrites the row and the recipes in one tx.
 func (s *Store) UpdateItem(ctx context.Context, it domain.Item, components []int64) error {
 	return mapConstraint(s.WithTx(ctx, func(tx *sql.Tx) error {
-		if _, err := tx.ExecContext(ctx, `UPDATE items SET name = ?, tier = ?, effect = ? WHERE id = ?`, it.Name, it.Tier, it.Effect, it.ID); err != nil {
+		res, err := tx.ExecContext(ctx, `UPDATE items SET name = ?, tier = ?, effect = ? WHERE id = ?`, it.Name, it.Tier, it.Effect, it.ID)
+		if err != nil {
+			return err
+		}
+		if err := affected(res, "item"); err != nil {
 			return err
 		}
 		return insertChildInts(ctx, tx, "item_recipes", "result_id", "component_id", it.ID, components)
@@ -112,8 +116,11 @@ func (s *Store) ListRelics(ctx context.Context) ([]domain.Relic, error) {
 
 // UpdateRelic rewrites one relic.
 func (s *Store) UpdateRelic(ctx context.Context, r domain.Relic) error {
-	_, err := s.DB.ExecContext(ctx, `UPDATE relics SET name = ?, effect = ? WHERE id = ?`, r.Name, r.Effect, r.ID)
-	return mapConstraint(err)
+	res, err := s.DB.ExecContext(ctx, `UPDATE relics SET name = ?, effect = ? WHERE id = ?`, r.Name, r.Effect, r.ID)
+	if err != nil {
+		return mapConstraint(err)
+	}
+	return affected(res, "relic")
 }
 
 // DeleteRelic removes one relic; lineups keeping it in history refuse the delete.
@@ -155,8 +162,11 @@ func (s *Store) ListPatches(ctx context.Context) ([]domain.Patch, error) {
 
 // UpdatePatch rewrites one patch.
 func (s *Store) UpdatePatch(ctx context.Context, p domain.Patch) error {
-	_, err := s.DB.ExecContext(ctx, `UPDATE patches SET version = ?, released_at = ? WHERE id = ?`, p.Version, p.ReleasedAt, p.ID)
-	return mapConstraint(err)
+	res, err := s.DB.ExecContext(ctx, `UPDATE patches SET version = ?, released_at = ? WHERE id = ?`, p.Version, p.ReleasedAt, p.ID)
+	if err != nil {
+		return mapConstraint(err)
+	}
+	return affected(res, "patch")
 }
 
 // DeletePatch removes one patch; matches keep their history and refuse the delete.
@@ -198,8 +208,11 @@ func (s *Store) ListPros(ctx context.Context) ([]domain.Pro, error) {
 
 // UpdatePro rewrites one pro.
 func (s *Store) UpdatePro(ctx context.Context, p domain.Pro) error {
-	_, err := s.DB.ExecContext(ctx, `UPDATE pros SET name = ?, handle = ?, peak_rank = ? WHERE id = ?`, p.Name, p.Handle, p.PeakRank, p.ID)
-	return mapConstraint(err)
+	res, err := s.DB.ExecContext(ctx, `UPDATE pros SET name = ?, handle = ?, peak_rank = ? WHERE id = ?`, p.Name, p.Handle, p.PeakRank, p.ID)
+	if err != nil {
+		return mapConstraint(err)
+	}
+	return affected(res, "pro")
 }
 
 // DeletePro removes one pro; lineups keeping the credit refuse the delete.

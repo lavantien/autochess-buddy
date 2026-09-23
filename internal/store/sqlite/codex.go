@@ -119,7 +119,11 @@ func (s *Store) ListRaces(ctx context.Context) ([]domain.Race, error) {
 // UpdateRace rewrites the name and the tier ladder in one tx.
 func (s *Store) UpdateRace(ctx context.Context, r domain.Race, tiers []domain.Tier) error {
 	return mapConstraint(s.WithTx(ctx, func(tx *sql.Tx) error {
-		if _, err := tx.ExecContext(ctx, `UPDATE races SET name = ? WHERE id = ?`, r.Name, r.ID); err != nil {
+		res, err := tx.ExecContext(ctx, `UPDATE races SET name = ? WHERE id = ?`, r.Name, r.ID)
+		if err != nil {
+			return err
+		}
+		if err := affected(res, "race"); err != nil {
 			return err
 		}
 		return insertTiers(ctx, tx, "race_tiers", "race_id", r.ID, tiers)
@@ -183,7 +187,11 @@ func (s *Store) ListClasses(ctx context.Context) ([]domain.Class, error) {
 // UpdateClass rewrites the name and the tier ladder in one tx.
 func (s *Store) UpdateClass(ctx context.Context, c domain.Class, tiers []domain.Tier) error {
 	return mapConstraint(s.WithTx(ctx, func(tx *sql.Tx) error {
-		if _, err := tx.ExecContext(ctx, `UPDATE classes SET name = ? WHERE id = ?`, c.Name, c.ID); err != nil {
+		res, err := tx.ExecContext(ctx, `UPDATE classes SET name = ? WHERE id = ?`, c.Name, c.ID)
+		if err != nil {
+			return err
+		}
+		if err := affected(res, "class"); err != nil {
 			return err
 		}
 		return insertTiers(ctx, tx, "class_tiers", "class_id", c.ID, tiers)

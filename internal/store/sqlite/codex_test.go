@@ -283,6 +283,20 @@ func TestCodexCRUD_RoundTrip(t *testing.T) {
 	})
 }
 
+func TestUpdateCodex_StaleIdMapsToNotFound(t *testing.T) {
+	ctx := context.Background()
+	s := openTemp(t)
+
+	err := s.UpdateRace(ctx, domain.Race{ID: 99, Name: "ghost race"}, nil)
+	if !errors.Is(err, domain.ErrNotFound) {
+		t.Fatalf("update stale race err = %v, want ErrNotFound", err)
+	}
+	err = s.UpdatePro(ctx, domain.Pro{ID: 99, Name: "ghost"})
+	if !errors.Is(err, domain.ErrNotFound) {
+		t.Fatalf("update stale pro err = %v, want ErrNotFound", err)
+	}
+}
+
 func TestUpdateHero_RewritesJunctions(t *testing.T) {
 	ctx := context.Background()
 	s := openTemp(t)

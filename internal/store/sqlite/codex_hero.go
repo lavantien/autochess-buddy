@@ -117,7 +117,11 @@ func (s *Store) ListHeroes(ctx context.Context) ([]domain.Hero, error) {
 // UpdateHero rewrites the row and both junction tables in one tx.
 func (s *Store) UpdateHero(ctx context.Context, h domain.Hero) error {
 	return mapConstraint(s.WithTx(ctx, func(tx *sql.Tx) error {
-		if _, err := tx.ExecContext(ctx, `UPDATE heroes SET name = ?, cost = ?, ability = ?, notes = ? WHERE id = ?`, h.Name, h.Cost, h.Ability, h.Notes, h.ID); err != nil {
+		res, err := tx.ExecContext(ctx, `UPDATE heroes SET name = ?, cost = ?, ability = ?, notes = ? WHERE id = ?`, h.Name, h.Cost, h.Ability, h.Notes, h.ID)
+		if err != nil {
+			return err
+		}
+		if err := affected(res, "hero"); err != nil {
 			return err
 		}
 		return writeHeroLineages(ctx, tx, h, h.ID)
