@@ -244,6 +244,26 @@ func TestAddLineup_HeroByIDUnknownBareReturn(t *testing.T) {
 	}
 }
 
+func TestValidateLineup_HeroIDMissingWithoutName(t *testing.T) {
+	ctx := context.Background()
+	svc := newService(t)
+	patchID, _, _, _, _, _ := seedCodex(t, svc)
+	matchID, err := svc.CreateMatch(ctx, domain.Match{PatchID: patchID, PlayedAt: 1789000000, Source: "pro"})
+	if err != nil {
+		t.Fatalf("create match: %v", err)
+	}
+
+	cmd := domain.AddLineupCmd{
+		Label: "stale board", Placement: 1,
+		Slots: []domain.Slot{{SlotIndex: 0, Hero: domain.Hero{ID: 999}, Stars: 2}},
+	}
+	_, newID, err := svc.AddLineup(ctx, matchID, cmd, 0)
+	if newID != 0 {
+		t.Fatalf("newID = %d, want 0 on validation failure", newID)
+	}
+	assertFieldErrors(t, err, []domain.FieldError{{Field: "hero", Msg: "pick a hero from the codex."}})
+}
+
 func TestEditor_PatchDeleteRefusedBehindMatchAndUnknownMatch(t *testing.T) {
 	ctx := context.Background()
 	svc := newService(t)

@@ -75,6 +75,34 @@ func TestAddSlot_StarsOutOfRangeNonHXRedirects(t *testing.T) {
 	assertHXRedirect(t, rec, http.StatusSeeOther, "/edit")
 }
 
+func TestAddSlot_EmptyHero422(t *testing.T) {
+	f := seedEditor(t)
+	l := strconv.FormatInt(f.lineupID, 10)
+	m := strconv.FormatInt(f.matchID, 10)
+	form := "match_id=" + m + "&hero=&stars=2"
+	rec := f.post(t, "POST", "/lineups/"+l+"/slots", form, true)
+	if rec.Code != http.StatusUnprocessableEntity {
+		t.Fatalf("status = %d, want 422", rec.Code)
+	}
+	body := rec.Body.String()
+	if want := "hero is required."; !strings.Contains(body, want) {
+		t.Fatalf("body must carry required copy %q, got %s", want, body)
+	}
+	if strings.Contains(body, "no hero named") {
+		t.Fatalf("body must not carry the empty-name lookup copy, got %s", body)
+	}
+	if !strings.Contains(body, `id="heroform-`) {
+		t.Fatalf("422 must rerender the hero form, got %s", body)
+	}
+	view, err := f.entry.Editor(context.Background(), f.matchID)
+	if err != nil {
+		t.Fatalf("editor: %v", err)
+	}
+	if len(view.Lineups[0].Slots) != 1 {
+		t.Fatalf("empty hero must not add a slot, got %d", len(view.Lineups[0].Slots))
+	}
+}
+
 func TestAddSlot_BoardCapRejectsThirteenthHero(t *testing.T) {
 	f := seedEditor(t)
 	ctx := context.Background()

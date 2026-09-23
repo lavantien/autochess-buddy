@@ -105,6 +105,10 @@ func (s EntryService) validateLineup(ctx context.Context, matchID int64, cmd dom
 		}
 		if sl.Hero.ID != 0 {
 			if _, err := s.St.GetHero(ctx, sl.Hero.ID); err != nil {
+				if sl.Hero.Name == "" {
+					errs = append(errs, domain.FieldError{Field: "hero", Msg: "pick a hero from the codex."})
+					continue
+				}
 				return domain.ErrNoHeroNamed(sl.Hero.Name)
 			}
 		}

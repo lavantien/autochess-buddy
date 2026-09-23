@@ -36,6 +36,10 @@ func (s *Server) addSlot(w http.ResponseWriter, r *http.Request) {
 		}
 		renderOOB(s.log, w, r, code, ui.HeroForm(view, *l, ui.HeroFormState{Hero: name, Stars: f.str("stars"), Err: msg}, true))
 	}
+	if name == "" {
+		fail("hero is required.", http.StatusUnprocessableEntity)
+		return
+	}
 	hero, err := s.st.GetHeroByName(r.Context(), name)
 	if err != nil {
 		fail(domain.ErrNoHeroNamed(name).Error(), http.StatusUnprocessableEntity)
