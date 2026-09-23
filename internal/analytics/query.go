@@ -21,9 +21,9 @@ func querySQL(name string) string {
 	return string(q)
 }
 
-// catalogueQuery renders an embedded catalogue query for a filter. The SQL
-// text carries one filters token at the guard predicate, which filterSQL
-// fills with the optional patch and source clauses. Bound parameters are not
+// catalogueQuery renders an embedded catalogue query for a filter. Each SQL
+// text carries exactly ONE filters token at its guard predicate — the
+// count-1 replace below depends on that invariant. Bound parameters are not
 // used on purpose: this duckdb prebuilt linked against the current Windows
 // toolchain crashes the process on any bind, named or positional, while
 // parameterless statements run clean, so the filters inline as literals.

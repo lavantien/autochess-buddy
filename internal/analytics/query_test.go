@@ -11,6 +11,20 @@ import (
 // lineup 33 (match 5, patch 2) adds one pick at placement 1, and draft lineups
 // 34..36 are never in a view because their match has finalized_at = 0.
 
+// TestQuoteLiteral_NeutralizesQuoteAttack pins the only hand-written link in
+// the literal-composition chain: a hostile Source must arrive as one inert
+// string literal, never as SQL.
+func TestQuoteLiteral_NeutralizesQuoteAttack(t *testing.T) {
+	_, e := openAnalytics(t)
+	rows, err := e.HeroPerformance(context.Background(), Filter{Source: "pro' OR '1'='1"})
+	if err != nil {
+		t.Fatalf("hostile source must not error: %v", err)
+	}
+	if len(rows) != 0 {
+		t.Fatalf("hostile source must match nothing, got %d rows", len(rows))
+	}
+}
+
 func TestHeroQuery_FilterScoping(t *testing.T) {
 	_, e := openAnalytics(t)
 	ctx := context.Background()
