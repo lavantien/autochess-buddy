@@ -16,7 +16,7 @@ var (
 	ErrLineageCount = errors.New("a hero carries 1 to 2 races and 1 to 2 classes.")
 	ErrNotFound     = errors.New("not found.")
 	// Copy for the me case is not in the spec, mirror of the pro wording, flagged in the stage report.
-	ErrMeFinalize  = errors.New("a my match needs exactly 1 lineup before it can be finalized.")
+	ErrMeFinalize  = errors.New("my matches need exactly 1 lineup before they can be finalized.")
 	ErrProFinalize = errors.New("a pro match needs 8 lineups with placements 1 through 8 before it can be finalized.")
 )
 
@@ -64,7 +64,11 @@ func ValidateHero(h Hero) error {
 }
 
 // ValidateFinalize checks a match carries the lineups its source demands.
+// Source must be "me" or "pro"; the schema CHECK guarantees it for stored rows.
 func ValidateFinalize(m Match, lineups []Lineup) error {
+	if m.Source != "me" && m.Source != "pro" {
+		return fmt.Errorf("source must be me or pro, got %q", m.Source)
+	}
 	if m.Source == "me" {
 		if len(lineups) != 1 {
 			return ErrMeFinalize
