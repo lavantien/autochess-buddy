@@ -99,9 +99,13 @@ func TestNewMatch_UnknownPatch422RerendersForm(t *testing.T) {
 		t.Fatalf("status = %d, want 422: %s", rec.Code, rec.Body.String())
 	}
 	body := rec.Body.String()
-	// Pinned gap: the patch_id field error is never printed because the form
-	// template only renders st.err("played_at"). What is observable is the
-	// rerender keeping exactly what was typed.
+	// The patch_id field error must print once and focus the select.
+	if want := "pick a patch from the list."; strings.Count(body, want) != 1 {
+		t.Fatalf("patch error must appear exactly once, got body %s", body[:min(400, len(body))])
+	}
+	if !strings.Contains(body, `<select name="patch_id" data-autofocus>`) {
+		t.Fatalf("patch select must carry data-autofocus, got %s", body[:min(400, len(body))])
+	}
 	for _, want := range []string{
 		"<h1>new match</h1>",
 		`value="pro" selected`,
@@ -111,6 +115,31 @@ func TestNewMatch_UnknownPatch422RerendersForm(t *testing.T) {
 		if !strings.Contains(body, want) {
 			t.Fatalf("422 rerender missing %q, got %s", want, body[:min(400, len(body))])
 		}
+	}
+}
+
+func TestNewMatch_BogusSource422NamesSource(t *testing.T) {
+	fx := seedEditor(t)
+	patches, err := fx.st.ListPatches(context.Background())
+	if err != nil || len(patches) == 0 {
+		t.Fatalf("patches: %v", err)
+	}
+	form := "patch_id=" + strconv.FormatInt(patches[0].ID, 10) + "&source=bogus&played_at=2026-09-23T20:15"
+	rec := fx.post(t, http.MethodPost, "/matches/new", form, false)
+	if rec.Code != http.StatusUnprocessableEntity {
+		t.Fatalf("status = %d, want 422: %s", rec.Code, rec.Body.String())
+	}
+	body := rec.Body.String()
+	// The service's source validation must reach its own field, not masquerade
+	// as a patch problem.
+	if want := "source must be me or pro."; strings.Count(body, want) != 1 {
+		t.Fatalf("source error must appear exactly once, got %s", body[:min(400, len(body))])
+	}
+	if strings.Contains(body, "pick a patch from the list.") {
+		t.Fatalf("valid patch must not also flag the patch field, got %s", body[:min(400, len(body))])
+	}
+	if !strings.Contains(body, `<select name="source" data-autofocus>`) {
+		t.Fatalf("source select must carry data-autofocus, got %s", body[:min(400, len(body))])
 	}
 }
 

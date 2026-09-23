@@ -195,30 +195,61 @@ func TestItemCreate_422PreservesTypedValues(t *testing.T) {
 	}
 }
 
-func TestItemCreate_SkipsGarbageComponentValues(t *testing.T) {
+func TestItemCreate_GarbageComponent422(t *testing.T) {
 	f := seedEditor(t)
 	ctx := context.Background()
 	hammer := itemSpare(t, f, "hammer")
-	rec := f.post(t, "POST", "/items", "name=frost shard&tier=2&effect=chill&components=abc&components="+strconv.FormatInt(hammer, 10), false)
-	if rec.Code != http.StatusSeeOther || rec.Header().Get("Location") != "/items" {
-		t.Fatalf("create status = %d location = %q, want 303 /items: %s", rec.Code, rec.Header().Get("Location"), truncBody(rec.Body.String()))
+	// A lone garbage value refuses the whole create.
+	rec := f.post(t, "POST", "/items", "name=x&tier=1&effect=y&components=abc", false)
+	if rec.Code != http.StatusUnprocessableEntity {
+		t.Fatalf("garbage component status = %d, want 422: %s", rec.Code, truncBody(rec.Body.String()))
+	}
+	body := rec.Body.String()
+	if want := "pick components from the list."; strings.Count(body, want) != 1 {
+		t.Fatalf("components error must appear exactly once, got %s", truncBody(body))
+	}
+	if !strings.Contains(body, `value="x"`) {
+		t.Fatalf("garbage component rerender must keep the typed name, got %s", truncBody(body))
+	}
+	// A valid id next to the garbage must not sneak the row through either.
+	rec = f.post(t, "POST", "/items", "name=frost shard&tier=2&effect=chill&components=abc&components="+strconv.FormatInt(hammer, 10), false)
+	if rec.Code != http.StatusUnprocessableEntity {
+		t.Fatalf("mixed component status = %d, want 422: %s", rec.Code, truncBody(rec.Body.String()))
+	}
+	if !strings.Contains(rec.Body.String(), "pick components from the list.") {
+		t.Fatalf("mixed garbage must still name the components field, got %s", truncBody(rec.Body.String()))
 	}
 	items, err := f.st.ListItems(ctx)
 	if err != nil {
 		t.Fatalf("list items: %v", err)
 	}
-	var shard int64
 	for _, it := range items {
-		if it.Name == "frost shard" {
-			shard = it.ID
+		if it.Name == "frost shard" || it.Name == "x" {
+			t.Fatalf("refused creates must not add rows, got %+v", items)
 		}
 	}
-	if shard == 0 {
-		t.Fatal("created item must exist")
+}
+
+func TestItemUpdate_GarbageComponent422(t *testing.T) {
+	f := seedEditor(t)
+	ctx := context.Background()
+	path := "/items/" + strconv.FormatInt(f.itemID, 10)
+	rec := f.post(t, "POST", path, "name=renamed core&tier=3&effect=zap&components=abc", false)
+	if rec.Code != http.StatusUnprocessableEntity {
+		t.Fatalf("garbage component status = %d, want 422: %s", rec.Code, truncBody(rec.Body.String()))
 	}
-	// The unparseable value is dropped, the valid one lands.
-	_, comps, err := f.st.GetItem(ctx, shard)
-	if err != nil || len(comps) != 1 || comps[0] != hammer {
-		t.Fatalf("recipe = %v, want [%d], err %v", comps, hammer, err)
+	body := rec.Body.String()
+	if want := "pick components from the list."; strings.Count(body, want) != 1 {
+		t.Fatalf("components error must appear exactly once, got %s", truncBody(body))
+	}
+	if !strings.Contains(body, `value="renamed core"`) {
+		t.Fatalf("garbage component rerender must keep the typed name, got %s", truncBody(body))
+	}
+	if !strings.Contains(body, `<select name="components" multiple size="4" data-autofocus>`) {
+		t.Fatalf("components select must carry data-autofocus, got %s", truncBody(body))
+	}
+	// The stored row and its recipe stay untouched.
+	if it, _, err := f.st.GetItem(ctx, f.itemID); err != nil || it.Name != "storm core" {
+		t.Fatalf("refused update must not touch the row, got %+v err %v", it, err)
 	}
 }

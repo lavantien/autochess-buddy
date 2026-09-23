@@ -70,7 +70,12 @@ func (s *Server) createMatch(w http.ResponseWriter, r *http.Request) {
 	m := domain.Match{PatchID: f.int64("patch_id"), PlayedAt: playedAt, Source: st.Values["source"], Notes: f.str("notes")}
 	id, cerr := s.entry.CreateMatch(r.Context(), m)
 	if cerr != nil {
-		st.Errs = append(st.Errs, domain.FieldError{Field: "patch_id", Msg: "pick a patch from the list."})
+		var ve domain.ValidationError
+		if errors.As(cerr, &ve) {
+			st.Errs = append(st.Errs, ve...)
+		} else {
+			st.Errs = append(st.Errs, domain.FieldError{Field: "patch_id", Msg: "pick a patch from the list."})
+		}
 		patches := loadList(s.log, r.Context(), "patches", s.st.ListPatches)
 		renderPage(s.log, w, r, http.StatusUnprocessableEntity, ui.NewMatchPage(patches, st))
 		return

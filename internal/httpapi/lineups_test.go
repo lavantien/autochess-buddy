@@ -35,7 +35,7 @@ func TestUpdateLineup_Placement422PreservesTypedValues(t *testing.T) {
 	}
 }
 
-func TestUpdateLineup_NegativeRecord422HidesRecordMessage(t *testing.T) {
+func TestUpdateLineup_NegativeRecord422ShowsRecordMessage(t *testing.T) {
 	f := seedEditor(t)
 	l := strconv.FormatInt(f.lineupID, 10)
 	form := "match_id=" + strconv.FormatInt(f.matchID, 10) + "&placement=1&wins=-1&draws=0&losses=0&networth=0"
@@ -50,10 +50,11 @@ func TestUpdateLineup_NegativeRecord422HidesRecordMessage(t *testing.T) {
 	if !strings.Contains(body, `value="-1"`) {
 		t.Fatalf("422 must preserve the typed wins value, got %s", body)
 	}
-	// Pinned current behavior: EditForm renders only placement errors; the
-	// record error is computed, steals the autofocus, but never shows text.
-	if want := "wins, draws, losses and networth cannot be negative."; strings.Contains(body, want) {
-		t.Fatalf("record message is currently absent from EditForm; update this pin if it renders: %s", body)
+	// EditForm prints the record error just like AddForm: exactly one copy,
+	// anchored to the issuing fragment so the visitor sees why it refused.
+	want := "wins, draws, losses and networth cannot be negative."
+	if n := strings.Count(body, want); n != 1 {
+		t.Fatalf("record message must appear exactly once, got %d: %s", n, body)
 	}
 	if !strings.Contains(body, "data-autofocus") {
 		t.Fatalf("record error must still steal the autofocus, got %s", body)

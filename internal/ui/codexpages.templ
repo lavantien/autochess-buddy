@@ -183,11 +183,14 @@ templ ItemForm(all []domain.Item, st CodexFormState, id int64, submit string) {
 		</label>
 		<label>
 			<span>components</span>
-			<select name="components" multiple size="4">
+			<select name="components" multiple size="4" data-autofocus?={ st.autofocus("components") }>
 				for _, opt := range all {
 					<option value={ itoa(opt.ID) } selected?={ st.hasComponent(opt.ID) }>{ opt.Name }</option>
 				}
 			</select>
+			if msg := st.err("components"); msg != "" {
+				<p class="fielderr">{ msg }</p>
+			}
 		</label>
 		<button type="submit" class="button button-primary">{ submit }</button>
 	</form>
