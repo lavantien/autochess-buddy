@@ -47,9 +47,9 @@ rarity ladder, semantic only, always paired with the cost digit:
 | 4 | #9B6FD9 |
 | 5 | #D9A441 (gold) |
 
-one placement coding everywhere (numerals, summary cards, table bars): 1st gold, placements 2 to 4 light, placements 5 to 8 dim. bar hexes are precomputed, never opacity blends: light #7F8892, dim #656F7B.
+one placement coding: the tier split (1st, 2 to 4, 5 to 8) is identical everywhere. numerals and summary cards render gold, chalk, slate. bars render gold plus the precomputed hexes light #7F8892 and dim #656F7B, never opacity blends.
 
-computed contrast: chalk on ink 14.3:1, gold on ink 8.1:1, slate on panel 6.4:1, ink on gold 8.1:1, rust on ink 6.1:1, rust on panel 5.4:1. all text pairs pass wcag aa, chalk gold and rust pass aaa for large text. the bar hexes clear the 3:1 graphics minimum on ink: light 5.1:1, dim 3.6:1.
+computed contrast, 2 decimals: chalk on ink 14.29:1, gold on ink 8.07:1, slate on panel 6.42:1, ink on gold 8.07:1, rust on ink 6.07:1, rust on panel 5.43:1. all text pairs pass wcag aa, chalk gold and rust pass aaa for large text. the bar hexes clear the 3:1 graphics minimum on ink: light 5.05:1, dim 3.55:1.
 
 ### type
 
@@ -101,12 +101,12 @@ patch [7.5 v]  source [pro v]          120 lineups in view
 hero performance
 
 hero           cost  pick    top 4   floor   avg   vs field  finishes
-sky breaker     5    41.2%   63.4%  55.1%   3.8    -0.7     [#::::::.]
-grim jaw        4    38.7%   60.2%  53.8%   4.5     0.0     [##:::::.]
-lord of sand    2    21.0%   48.9%  44.0%   5.2    +0.7     [#::::::.]
+sky breaker     5    41.7%   63.4%  55.1%   3.8    -0.7     [#::::::.]
+grim jaw        4    38.3%   60.2%  53.8%   4.5     0.0     [##:::::.]
+lord of sand    2    20.8%   48.9%  44.0%   5.2    +0.7     [#::::::.]
 ```
 
-- the filter row submits with hx-get on change, targets the table panel (`hx-target`, `hx-push-url`), so the url keeps the filter and the table swaps as a partial. this is the read path the readme partial routes exist for (`/dashboard/heroes?patch=7.5&source=pro`)
+- the filter row submits with hx-get on change, targets the table panel (`hx-target`, `hx-push-url`), so the url keeps the filter and the table swaps as a partial. each select carries `hx-include="closest form"` so sibling filters ride along, and the row carries `hx-sync` with the abort strategy so a slow patch response cannot overwrite a newer source response. this is the read path the readme partial routes exist for (`/dashboard/heroes?patch=7.5&source=pro`)
 - sample numbers honor the invariants: a pro filter yields a lineup count divisible by 8 and a field average of exactly 4.5, so every mock shows one
 - the finishes cell is a 72 by 10px bar of 8 segments, one per placement, segment width is the share of finishes at that placement, colors from the single placement coding (gold, light, dim). each bar carries an aria-label with all 8 shares
 - a metric legend sits under the section title, always visible, plain words (see copy)
@@ -186,7 +186,7 @@ edit match  patch 7.5  source pro       [###.....] 3/8  [finalize match]
 |     w-d-l 7-2-1      networth 61                               |
 |     relics  [cursed blade x] [war horn x] [+ relic]            |
 | +------------+------------+------------+------------+          |
-| | o grim jaw    * * - 2/3 | | o dusk ranger   - - - 1/3        |
+| | o grim jaw    * * - 2/3 | | o dusk ranger   * - - 1/3        |
 | |   [void stone x] [fist x]| |   empty slot placeholder         |
 | |   + slot details        | |                                  |
 | +------------+------------+------------+------------+          |
@@ -197,7 +197,7 @@ edit match  patch 7.5  source pro       [###.....] 3/8  [finalize match]
 +---------------------------------------------------------------+
 ```
 
-- the slot grid is 4 columns by 3 rows and always renders 12 cells. empty cells are static dashed placeholders. filled cells stay in their cell position until deleted, which returns the placeholder
+- the slot grid is 4 columns by 3 rows and always renders 12 cells. empty cells are static dashed placeholders. filled cells stay in their cell position until deleted, which returns the placeholder. a new hero takes the lowest free cell index, so a deleted middle cell is refilled by the next add
 - the add hero row pins to the card bottom: input with datalist filtered by the browser, stars select defaulting to 2, [add hero]. it is the single add hero mechanism
 - every control on the card is its own small sibling form element, never nested, each carrying its own ids as hidden inputs
 - each filled slot has one slot details disclosure (native `details`) holding all slot operations: stars select with [save stars], item select with [add item], and the item chips each with a remove x. no js
@@ -215,7 +215,7 @@ grim jaw       4    human        warrior       38      4.0
 dusk ranger    3    elf, beast   hunter        21      4.4
 ```
 
-- codex forms are plain full page posts with 303 redirects, no htmx, matching the handler to store path in the architecture
+- codex create and edit are plain full page posts with 303 redirects, no htmx, matching the handler to store path in the architecture. codex deletes use hx-delete with hx-confirm and the server answers with the `HX-Redirect` response header to the codex index: html forms cannot issue a delete method, and an htmx delete needs a navigation answer rather than a swap
 - field lists, one per entity, straight from the schema:
   - hero: name, cost 1 to 5, race 1 plus optional race 2, class 1 plus optional class 2, ability, notes. the race and class selects are populated by the synergies tab, so a fresh install creates races and classes first
   - item: name, tier, effect, components (multi select over items, the recipe picker)
@@ -253,29 +253,30 @@ match 14  patch 7.5  pro  finalized 2026-09-22
 notes  vic lobby, ghost went 8th rolling warriors
 ```
 
-- the scoreboard strip is the accent moment: 8 compact summary cards (placement numeral, display name, w-d-l, networth) in one row, ranked, no boards
+- the scoreboard strip is the accent moment: 8 compact summary cards (placement numeral, display name, w-d-l, networth) in one row, ranked, no boards. below 900px it wraps to 2 rows of 4, below 600px to 2 columns
 - the full boards below render read only in the same 2 column grid as the editor
 
 ## the swap contract
 
-htmx 4 facts this relies on, verified 2026-09-23: error responses swap by default, `hx-swap-oob` still exists and the main swap runs before oob swaps, `hx-confirm` is still core, attribute inheritance is opt-in so every interaction attribute goes on the element itself, `hx-disabled-elt` was renamed to `hx-disable`.
+htmx 4 facts this relies on, verified 2026-09-23: error responses swap by default, `hx-swap-oob` still exists and the main swap runs before oob swaps, `hx-confirm` is still core, attribute inheritance is opt-in so every interaction attribute goes on the element itself, `hx-disabled-elt` was renamed to `hx-disable`, and the `HX-Redirect` response header remains the core full navigation mechanism.
 
 one rule covers every mutation, so there is exactly one mechanism to wire and review:
 
 - every mutating control posts with `hx-swap="none"`
 - the response is a set of out of band `outerHTML` fragments. each fragment carries the stable id of the region it replaces. the server owns rendered state: it re-sorts the cards, resets the issuing form, refreshes the pips, and redraws the affected grid
+- fragments never nest: when a response replaces an outer region (cards), the fragments for regions inside it (card, heroform, grid) are omitted
 - on success the issuing form rerenders reset (placement prefill advances, datalist input clears)
-- on 422 the issuing form rerenders with entered values preserved and inline errors under the first bad field
-- every mutating submit control carries `hx-disable` (the htmx 4 rename) so double submits are blocked at the control, and the unique placement constraint backs it up server side
+- on 422 the issuing form rerenders with entered values preserved and inline errors under the first bad field. field-less forms (copy) render their error inline beside the button
+- double submits are guarded twice: every submit control carries `hx-disable="this"` and every form carries `hx-sync` with the abort strategy, so an enter keypress in a text field cannot race the button. the placement unique constraint backs lineup adds server side, duplicate heroes on one board are legal data
 
-stable ids: `cards-{matchId}`, `pips-{matchId}`, `addform-{matchId}`, `card-{lineupId}`, `editform-{lineupId}`, `grid-{lineupId}`, `relics-{lineupId}`, `slot-{slotId}`, `dashpanel-{view}`. every oob fragment uses the id of the element it replaces.
+stable ids: `cards-{matchId}`, `pips-{matchId}`, `addform-{matchId}`, `card-{lineupId}`, `editform-{lineupId}`, `heroform-{lineupId}`, `grid-{lineupId}`, `relics-{lineupId}`, `slot-{slotId}`, `dashpanel-{view}`. every oob fragment uses the id of the element it replaces.
 
 | action | request | oob fragments in the response | focus after |
 |---|---|---|---|
 | add lineup | POST /matches/{id}/lineups | cards, pips, addform (reset) | new card add hero input |
 | copy lineup | POST /matches/{id}/lineups + copy_from | cards, pips, addform (reset) | new card add hero input |
-| edit lineup scalars | POST /lineups/{id} | card, plus cards and pips when placement changed | edit disclosure |
-| add hero | POST /lineups/{id}/slots | grid, addform row (reset) | add hero input stays |
+| edit lineup scalars | POST /lineups/{id} | card and pips, cards instead of card when placement changed | edit disclosure |
+| add hero | POST /lineups/{id}/slots | grid, heroform (reset) | heroform input restored |
 | save stars | POST /slots/{id} | grid | slot details disclosure |
 | add item | POST /slots/{id}/items | grid (details rendered open) | item select |
 | remove item | DELETE /slots/{id}/items/{itemId} | grid | slot details disclosure |
@@ -284,10 +285,12 @@ stable ids: `cards-{matchId}`, `pips-{matchId}`, `addform-{matchId}`, `card-{lin
 | delete slot | DELETE /slots/{id} | grid | previous focusable in the card |
 | delete lineup | DELETE /lineups/{id} | cards, pips | next card, else the add form |
 | validation error | any mutation above | the issuing form with values and errors | first errored field |
-| codex save or delete | POST or DELETE codex routes | none, plain post, 303 redirect | n/a |
+| create match | POST /matches/new | none, plain post, 303 redirect | n/a |
+| codex save | POST codex routes | none, plain post, 303 redirect | n/a |
+| codex delete | DELETE /heroes/{id} and siblings | none, hx-delete with hx-confirm, HX-Redirect to the codex index | n/a |
 | finalize | POST /matches/{id}/finalize | none, plain post, 303 redirect | n/a |
 
-focus movement is part of the contract, not decoration: htmx swaps that destroy or replace the focused control drop focus to the body, so after-swap focus is wired with htmx's own `hx-on` hooks per the table above. this is the only permitted wiring beyond declarative attributes.
+focus movement is part of the contract, not decoration: htmx swaps that destroy or replace the focused control drop focus to the body. focus targets get their own ids (the `heroform-{lineupId}` input, the first errored field, the captured neighbor). the move runs in the after-swap phase for oob content, wired with htmx's own `hx-on` hooks. the 2 delete rows capture the neighbor in the before-swap phase, before the node is gone. this is the only permitted wiring beyond declarative attributes.
 
 non-hx requests to any route get the full page or a redirect, per the readme http contract.
 
@@ -295,14 +298,14 @@ non-hx requests to any route get the full page or a redirect, per the readme htt
 
 - buttons: primary (gold fill, ink text, condensed 600 label), quiet (transparent, 1px line border), destructive (rust text on quiet). height 32 desktop, 44 minimum on touch
 - pips: n boxes 10 by 10px, filled boxes gold, count text beside
-- placement numeral: condensed 700 28px, gold when 1, chalk 2 to 4, slate 5 to 8
+- placement numeral: condensed 700 28px, the shared tier split: gold when 1, chalk 2 to 4, slate 5 to 8
 - rarity dot: 8px circle in the cost color, always adjacent to the cost digit and hero name
 - star pips: 3 marks 6px plus the text "n/3", filled count is star level
 - chips: panel fill, 1px line border, 3px radius, 13px text, each with a remove x mini form. item chips and relic chips look identical, the row label distinguishes them
 - tables: condensed 600 13px slate headers, 2px bottom rule in line color, 40px rows, right aligned numeric cells, row hover lifts background to panel
 - bars: the finishes cell described in the dashboard section, aria-label carries the 8 shares
 - disclosures: native `details` elements for slot operations, relic add, lineup edit, and codex create forms
-- busy: every mutating control carries `hx-disable`, the dim rides the htmx request classes
+- busy: every mutating control carries `hx-disable="this"` and its form carries `hx-sync`, the dim rides the htmx request classes
 - empty states: one sentence naming the next action, plus the primary button when a route exists
 - field errors: inline under the field, rust text, naming the field and the fix. form rerenders preserve entered values
 
@@ -367,7 +370,7 @@ error examples:
 - contrast pairs and ratios listed in the tokens section
 - reduced motion respected, see motion
 - tables use `th scope`, forms use `label for`
-- at 900px and below: editor and detail grids drop to 1 column, the slot grid keeps 4 columns until 720px then drops to 2, tables scroll horizontally inside their panel, touch targets grow to 44px
+- at 900px and below: editor and detail grids drop to 1 column, the scoreboard strip wraps to 2 rows of 4 and to 2 columns below 600px, the slot grid keeps 4 columns until 720px then drops to 2, tables scroll horizontally inside their panel, touch targets grow to 44px
 
 ## implementation notes
 
@@ -386,7 +389,7 @@ internal/ui/static/
 - component classes named by role: `topbar`, `strip`, `lcard`, `slot`, `chip`, `pip`, `spread`, `legend`. no utility classes, no cascade deeper than 2 levels
 - templ components mirror the component inventory one to one (Button, Pips, LineupCard, SlotCell, Chip, SpreadBar, MetricLegend), so the spec and the code stay in lockstep
 - numbers are formatted in go before they reach templates, templates never compute
-- the swap contract is the single wiring surface: one rule, the id list, the focus table. attribute names were checked against htmx 4 docs, confirm against the vendored file once when wiring
+- the swap contract is the single wiring surface: one rule, the id list, the focus table. attribute names and the HX-Redirect header were checked against htmx 4 docs, confirm all of it including the oob after-swap event name against the vendored file once when wiring
 - css is hand written and stays under the 400 sloc budget by keeping the component count low: if a new visual need appears, extend an existing component before adding one
 
 ## design self-check
@@ -400,4 +403,4 @@ rejected generic tells, kept here as the checklist for future ui work:
 - all caps tracked eyebrows, meta strings joined with middle dots, arrow suffixes on links, mono faces for small labels: all dropped
 - fade and slide entrances on every section: one settle on rerendered regions only
 
-this spec survived 2 independent adversarial review passes (usability and accessibility, htmx feasibility and voice) on 2026-09-23. future ui changes re-run this list and a review pass before shipping.
+this spec survived 2 independent adversarial review passes (usability and accessibility, htmx feasibility and voice) on 2026-09-23, plus a per finding verification round on the fixes. future ui changes re-run this list and a review pass before shipping.
