@@ -77,6 +77,16 @@ func TestRefreshReadme_RejectsEndBeforeStart(t *testing.T) {
 	}
 }
 
+func TestNewShotServer_SetsHeaderTimeout(t *testing.T) {
+	srv := newShotServer(http.NotFoundHandler())
+	if srv.ReadHeaderTimeout <= 0 {
+		t.Fatalf("ReadHeaderTimeout = %v, want a positive cap on header reads", srv.ReadHeaderTimeout)
+	}
+	if srv.Handler == nil {
+		t.Fatal("Handler is nil, want the passed handler wired through")
+	}
+}
+
 func TestBootSeededApp_ServesDashboardAndDrains(t *testing.T) {
 	dbPath := filepath.Join(t.TempDir(), "shot.db")
 	lis, err := net.Listen("tcp", "127.0.0.1:0")
