@@ -55,10 +55,21 @@ func (s *Store) AddLineup(ctx context.Context, cmd domain.AddLineupCmd) (int64, 
 			return err
 		}
 		for _, sl := range cmd.Slots {
-			if _, err := tx.ExecContext(ctx,
+			sres, err := tx.ExecContext(ctx,
 				`INSERT INTO lineup_slots (lineup_id, hero_id, slot_index, stars) VALUES (?, ?, ?, ?)`,
-				id, sl.Hero.ID, sl.SlotIndex, sl.Stars); err != nil {
+				id, sl.Hero.ID, sl.SlotIndex, sl.Stars)
+			if err != nil {
 				return err
+			}
+			slotID, err := sres.LastInsertId()
+			if err != nil {
+				return err
+			}
+			for _, it := range sl.Items {
+				if _, err := tx.ExecContext(ctx,
+					`INSERT INTO slot_items (slot_id, item_id) VALUES (?, ?)`, slotID, it.ID); err != nil {
+					return err
+				}
 			}
 		}
 		for _, rid := range cmd.RelicIDs {

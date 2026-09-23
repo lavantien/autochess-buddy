@@ -27,6 +27,29 @@ func TestAddLineup_PartialFailureRollsBackAll(t *testing.T) {
 	}
 }
 
+func TestAddLineup_PersistsSlotItems(t *testing.T) {
+	ctx := context.Background()
+	s := seedTemp(t)
+
+	// Slot items ride the initial lineup write: hero 1 carries items 1 and 2.
+	id, err := s.AddLineup(ctx, domain.AddLineupCmd{
+		MatchID: 6, Label: "loaded", Placement: 4,
+		Slots: []domain.Slot{
+			{SlotIndex: 0, Hero: domain.Hero{ID: 1}, Stars: 2, Items: []domain.Item{{ID: 1}, {ID: 2}}},
+			{SlotIndex: 1, Hero: domain.Hero{ID: 2}, Stars: 3},
+		},
+	})
+	if err != nil {
+		t.Fatalf("add lineup: %v", err)
+	}
+	var n int
+	if err := s.DB.QueryRowContext(ctx,
+		`SELECT count(*) FROM slot_items si JOIN lineup_slots ls ON ls.id = si.slot_id
+		 WHERE ls.lineup_id = ?`, id).Scan(&n); err != nil || n != 2 {
+		t.Fatalf("slot items on new lineup = %d, err %v, want 2", n, err)
+	}
+}
+
 func TestAddLineup_DuplicatePlacementMapsToConflictError(t *testing.T) {
 	ctx := context.Background()
 	s := seedTemp(t)
