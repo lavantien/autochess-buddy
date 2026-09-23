@@ -30,7 +30,7 @@ func TestCodexHeroFlow(t *testing.T) {
 	openDetails("details:has(summary:text-is('+ new class'))")
 	must(t, page.Locator("details:has(summary:text-is('+ new class')) input[name='name']").Fill("warrior"))
 	must(t, page.Locator("details:has(summary:text-is('+ new class')) button").Click())
-	must(t, page.WaitForURL("**/races"))
+	must(t, page.WaitForURL("**/classes"))
 
 	// Give human a tier ladder.
 	ladder := page.Locator(".ladder", playwright.PageLocatorOptions{HasText: playwright.String("human")})
