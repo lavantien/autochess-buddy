@@ -32,7 +32,7 @@ func newDashTestServer(t *testing.T) (http.Handler, *sqlite.Store, service.Entry
 	if err != nil {
 		t.Fatalf("open store: %v", err)
 	}
-	t.Cleanup(func() { st.Close() })
+	t.Cleanup(func() { _ = st.Close() })
 	entry := service.EntryService{St: st}
 	fake := &fakeAnalytics{}
 	return New(quietLog(), st, entry, fake), st, entry, fake

@@ -110,18 +110,18 @@ func (s *Store) CopyLineup(ctx context.Context, lineupID int64) (int64, error) {
 		for rows.Next() {
 			var l domain.Lineup
 			if err := rows.Scan(&l.Placement); err != nil {
-				rows.Close()
+				_ = rows.Close()
 				return err
 			}
 			existing = append(existing, l)
 		}
 		if err := rows.Err(); err != nil {
-			rows.Close()
+			_ = rows.Close()
 			return err
 		}
 		free := domain.FirstFreePlacement(existing)
 		if free == 0 {
-			return errors.New("all 8 placements in this match are already taken.")
+			return errors.New("all 8 placements in this match are already taken.") //nolint:staticcheck // user-facing copy
 		}
 		res, err := tx.ExecContext(ctx,
 			`INSERT INTO lineups (match_id, pro_id, label, placement, wins, draws, losses, networth, created_at)
@@ -147,13 +147,13 @@ func (s *Store) CopyLineup(ctx context.Context, lineupID int64) (int64, error) {
 		for slotRows.Next() {
 			var b boardSlot
 			if err := slotRows.Scan(&b.id, &b.heroID, &b.slotIndex, &b.stars); err != nil {
-				slotRows.Close()
+				_ = slotRows.Close()
 				return err
 			}
 			board = append(board, b)
 		}
 		if err := slotRows.Err(); err != nil {
-			slotRows.Close()
+			_ = slotRows.Close()
 			return err
 		}
 		for _, b := range board {
@@ -218,13 +218,13 @@ func (s *Store) AddSlot(ctx context.Context, lineupID, heroID int64, stars int) 
 		for rows.Next() {
 			var sl domain.Slot
 			if err := rows.Scan(&sl.SlotIndex); err != nil {
-				rows.Close()
+				_ = rows.Close()
 				return err
 			}
 			existing = append(existing, sl)
 		}
 		if err := rows.Err(); err != nil {
-			rows.Close()
+			_ = rows.Close()
 			return err
 		}
 		res, err := tx.ExecContext(ctx,

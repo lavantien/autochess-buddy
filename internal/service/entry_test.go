@@ -17,7 +17,7 @@ func newService(t *testing.T) EntryService {
 	if err != nil {
 		t.Fatalf("open store: %v", err)
 	}
-	t.Cleanup(func() { st.Close() })
+	t.Cleanup(func() { _ = st.Close() })
 	return EntryService{St: st}
 }
 

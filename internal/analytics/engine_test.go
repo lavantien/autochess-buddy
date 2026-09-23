@@ -18,16 +18,16 @@ func openAnalytics(t *testing.T) (*sqlite.Store, *engine) {
 		t.Fatalf("open store: %v", err)
 	}
 	if err := seed.Load(s.DB); err != nil {
-		s.Close()
+		_ = s.Close()
 		t.Fatalf("seed: %v", err)
 	}
 	e, err := New(path, &s.WriteMu)
 	if err != nil {
-		s.Close()
+		_ = s.Close()
 		t.Fatalf("open analytics: %v", err)
 	}
-	t.Cleanup(func() { e.Close() }) // closes before s.Close on the LIFO, releases the file on Windows
-	t.Cleanup(func() { s.Close() })
+	t.Cleanup(func() { _ = e.Close() }) // closes before s.Close on the LIFO, releases the file on Windows
+	t.Cleanup(func() { _ = s.Close() })
 	return s, e
 }
 

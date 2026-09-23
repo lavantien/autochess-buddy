@@ -33,13 +33,13 @@ func New(dbPath string, mu *sync.Mutex) (*engine, error) {
 	}
 	for _, stmt := range []string{`INSTALL sqlite`, `LOAD sqlite`} {
 		if _, err := db.Exec(stmt); err != nil {
-			db.Close()
+			_ = db.Close()
 			return nil, errors.Join(errFirstRun, err)
 		}
 	}
 	attach := fmt.Sprintf(`ATTACH '%s' AS ac (TYPE SQLITE, READ_ONLY)`, filepath.ToSlash(dbPath))
 	if _, err := db.Exec(attach); err != nil {
-		db.Close()
+		_ = db.Close()
 		return nil, fmt.Errorf("attach %s: %w", dbPath, err)
 	}
 	// ATTACH lives on the connection that ran it, so the pool stays at one conn and
@@ -62,7 +62,7 @@ func (e *engine) batch(ctx context.Context, query string, args []any, scan func(
 	if err != nil {
 		return fmt.Errorf("query: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	if err := scan(rows); err != nil {
 		return err
 	}

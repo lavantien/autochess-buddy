@@ -15,7 +15,7 @@ func openSeeded(t *testing.T) *sqlite.Store {
 	if err != nil {
 		t.Fatalf("open: %v", err)
 	}
-	t.Cleanup(func() { s.Close() })
+	t.Cleanup(func() { _ = s.Close() })
 	if err := Load(s.DB); err != nil {
 		t.Fatalf("Load: %v", err)
 	}

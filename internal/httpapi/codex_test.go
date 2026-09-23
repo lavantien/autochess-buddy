@@ -19,17 +19,6 @@ func seedCodexFix(t *testing.T) editorFixture {
 	return f
 }
 
-func (f editorFixture) get(t *testing.T, path string, hx bool) *httptest.ResponseRecorder {
-	t.Helper()
-	req := httptest.NewRequest(http.MethodGet, path, nil)
-	if hx {
-		req.Header.Set("HX-Request", "true")
-	}
-	rec := httptest.NewRecorder()
-	f.h.ServeHTTP(rec, req)
-	return rec
-}
-
 func TestCreateHero_303OnSuccess(t *testing.T) {
 	f := seedCodexFix(t)
 	race, _ := f.st.CreateRace(context.Background(), domain.Race{Name: "elf"}, nil)

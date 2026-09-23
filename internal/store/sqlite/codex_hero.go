@@ -154,7 +154,7 @@ func (s *Store) ListHeroesWithStats(ctx context.Context) ([]HeroStats, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	tallies := map[int64]HeroStats{}
 	for rows.Next() {
 		var id int64

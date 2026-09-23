@@ -22,7 +22,7 @@ func mapConstraint(err error) error {
 
 // scanRows folds each row through scan until the result set drains.
 func scanRows[T any](rows *sql.Rows, scan func(*sql.Rows) (T, error)) ([]T, error) {
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	var out []T
 	for rows.Next() {
 		v, err := scan(rows)

@@ -14,7 +14,7 @@ func openTemp(t *testing.T) *Store {
 	if err != nil {
 		t.Fatalf("Open: %v", err)
 	}
-	t.Cleanup(func() { store.Close() })
+	t.Cleanup(func() { _ = store.Close() })
 	return store
 }
 
@@ -66,7 +66,7 @@ func TestOpen_SecondOpenIsNoop(t *testing.T) {
 	if err != nil {
 		t.Fatalf("second Open: %v", err)
 	}
-	defer second.Close()
+	defer func() { _ = second.Close() }()
 	var afterSecond int
 	if err := second.DB.QueryRow(`SELECT count(*) FROM goose_db_version`).Scan(&afterSecond); err != nil {
 		t.Fatalf("version count after second Open: %v", err)

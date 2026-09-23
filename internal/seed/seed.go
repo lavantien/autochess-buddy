@@ -26,15 +26,15 @@ func Load(db *sql.DB) error {
 	}
 	var n int
 	if err := tx.QueryRowContext(ctx, `SELECT count(*) FROM matches`).Scan(&n); err != nil {
-		tx.Rollback()
+		_ = tx.Rollback()
 		return err
 	}
 	if n > 0 {
-		tx.Rollback()
+		_ = tx.Rollback()
 		return ErrSeeded
 	}
 	if _, err := tx.Exec(fixture); err != nil {
-		tx.Rollback()
+		_ = tx.Rollback()
 		return err
 	}
 	return tx.Commit()

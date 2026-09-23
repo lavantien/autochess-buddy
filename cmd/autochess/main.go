@@ -52,7 +52,7 @@ func runSeed(dbPath string) error {
 	if err != nil {
 		return err
 	}
-	defer st.Close()
+	defer func() { _ = st.Close() }()
 	if err := seed.Load(st.DB); err != nil {
 		return err
 	}
@@ -70,13 +70,13 @@ func run(addr, dbPath string, log *slog.Logger) error {
 	if err != nil {
 		return fmt.Errorf("open sqlite: %w", err)
 	}
-	defer st.Close()
+	defer func() { _ = st.Close() }()
 
 	eng, err := analytics.New(dbPath, &st.WriteMu)
 	if err != nil {
 		return fmt.Errorf("open duckdb: %w", err)
 	}
-	defer eng.Close()
+	defer func() { _ = eng.Close() }()
 	var dash analytics.Service = eng
 
 	srv := &http.Server{

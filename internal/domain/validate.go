@@ -8,16 +8,16 @@ import (
 
 // Error vocabulary, user-facing copy verbatim from frontend-design.md.
 var (
-	ErrInUse        = errors.New("existing matches keep their history.")
-	ErrSlotCap      = errors.New("a lineup holds at most 12 heroes.")
-	ErrItemCap      = errors.New("a slot holds at most 6 items.")
-	ErrStarsRange   = errors.New("stars must be between 1 and 3.")
-	ErrCostRange    = errors.New("cost must be between 1 and 5.")
-	ErrLineageCount = errors.New("a hero carries 1 to 2 races and 1 to 2 classes.")
-	ErrNotFound     = errors.New("not found.")
+	ErrInUse        = errors.New("existing matches keep their history.")            //nolint:staticcheck // spec copy, verbatim
+	ErrSlotCap      = errors.New("a lineup holds at most 12 heroes.")               //nolint:staticcheck // spec copy, verbatim
+	ErrItemCap      = errors.New("a slot holds at most 6 items.")                   //nolint:staticcheck // spec copy, verbatim
+	ErrStarsRange   = errors.New("stars must be between 1 and 3.")                  //nolint:staticcheck // spec voice
+	ErrCostRange    = errors.New("cost must be between 1 and 5.")                   //nolint:staticcheck // spec voice
+	ErrLineageCount = errors.New("a hero carries 1 to 2 races and 1 to 2 classes.") //nolint:staticcheck // spec voice
+	ErrNotFound     = errors.New("not found.")                                      //nolint:staticcheck // spec voice
 	// Copy for the me case is not in the spec, mirror of the pro wording, flagged in the stage report.
-	ErrMeFinalize  = errors.New("my matches need exactly 1 lineup before they can be finalized.")
-	ErrProFinalize = errors.New("a pro match needs 8 lineups with placements 1 through 8 before it can be finalized.")
+	ErrMeFinalize  = errors.New("my matches need exactly 1 lineup before they can be finalized.")                      //nolint:staticcheck // user-facing copy
+	ErrProFinalize = errors.New("a pro match needs 8 lineups with placements 1 through 8 before it can be finalized.") //nolint:staticcheck // spec copy, verbatim
 )
 
 // PlacementConflictError reports a UNIQUE(match_id, placement) hit, the store maps the
@@ -32,7 +32,7 @@ func (e *PlacementConflictError) Error() string {
 
 // ErrNoHeroNamed reports free-text hero input that misses the codex.
 func ErrNoHeroNamed(name string) error {
-	return fmt.Errorf("no hero named %s in the codex. add it first.", name)
+	return fmt.Errorf("no hero named %s in the codex. add it first.", name) //nolint:staticcheck // spec copy, verbatim
 }
 
 // FieldError names one bad form field and the fix.

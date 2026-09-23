@@ -30,16 +30,16 @@ func Open(path string) (*Store, error) {
 	}
 	sub, err := fs.Sub(migrations, "migrations")
 	if err != nil {
-		db.Close()
+		_ = db.Close()
 		return nil, err
 	}
 	p, err := goose.NewProvider(goose.DialectSQLite3, db, sub)
 	if err != nil {
-		db.Close()
+		_ = db.Close()
 		return nil, err
 	}
 	if _, err := p.Up(context.Background()); err != nil {
-		db.Close()
+		_ = db.Close()
 		return nil, fmt.Errorf("migrate %s: %w", path, err)
 	}
 	return &Store{DB: db}, nil

@@ -111,7 +111,7 @@ func (e *engine) NetworthByPlacement(ctx context.Context, f Filter) ([]PlaceRow,
 	}
 	out := make([]PlaceRow, len(raws))
 	for i, r := range raws {
-		out[i] = PlaceRow{Placement: r.Placement, N: r.N, AvgNetworth: r.AvgNetworth}
+		out[i] = PlaceRow(r)
 	}
 	return out, nil
 }
